@@ -56,7 +56,6 @@
 :root {
   --scene-board: #1e293b;
   --scene-plate: #475569;
-  --scene-layer: 0.14;
   --scene-dot: #475569;
   --scene-sky: #e2e8f0;
   --scene-rim: #a5f3fc;
@@ -85,9 +84,8 @@
   --color-slate-200: #1e293b;
   --color-plate: #e2e8f0;
   --scene-board: #e2e8f0;
-  /* A white plate vanishes on the pale board, so the light look tints its layers darker. */
+  /* A white plate vanishes on the pale board, so the light look tints it darker. */
   --scene-plate: #475569;
-  --scene-layer: 0.1;
   --scene-dot: #94a3b8;
   --scene-sky: #ffffff;
   --hud-bg: rgb(255 255 255 / 0.96);

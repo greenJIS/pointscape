@@ -1,12 +1,17 @@
 # Pointscape
 
-A flat 2D web puzzle. Every arrow is a line with a head. Tap an arrow whose path is clear and it slides off the board. Tap one that is blocked and you lose a heart. Clear the board to win.
+A flat 2D web puzzle. Every arrow is a line with a head. Tap an arrow whose path is clear and it slides off the board.
+Tap one that is blocked and you lose a heart. Clear the board to win.
 
-It is a remake of the idea behind the mobile game "Pointers" (Arrows). It reuses none of that game's art, audio, levels or name.
+It is a remake of the idea behind the mobile game "Pointers" (Arrows). It reuses none of that game's art, audio, levels
+or name.
 
 ## Level sets
 
-Difficulty is set by grid size: Tiny (16x16), Compact (24x24), Large (32x32), Vast (48x48) or Massive (64x64). Each size has 200 levels, for 1,000 levels in total. Tiny is open from the start. Clearing 10 levels of a size opens the next size. Levels 1 to 10 of each size use a plain square board to learn the grid; from level 11 shapes rotate. There is no Undo.
+Difficulty is set by grid size: Tiny (16x16), Compact (24x24), Large (32x32), Vast (48x48) or Massive (64x64).
+Each size has 200 levels, for 1,000 levels in total. Tiny is open from the start. Clearing 10 levels of a size opens the
+next size. Levels 1 to 10 of each size use a plain square board to learn the grid; from level 11 shapes rotate.
+There is no Undo.
 
 ## Getting started
 
@@ -38,7 +43,8 @@ public/     static files, such as the favicon and icons
 docs/       requirements, spec and plan (kept local, not in the repository)
 ```
 
-Commit messages follow `type(scope): summary` (feat, fix, chore, refactor, docs, test, ci, build, perf, style, revert) and are checked by commitlint through a Husky hook.
+Commit messages follow `type(scope): summary` (feat, fix, chore, refactor, docs, test, ci, build, perf, style, revert)
+and are checked by commitlint through a Husky hook.
 
 ## Documents
 
@@ -46,7 +52,9 @@ The design documents live in `docs/` on the author's machine and are not publish
 
 ## Deploy
 
-`.github/workflows/deploy.yml` lints, tests, builds and publishes `dist/` to GitHub Pages on every push to `main`. In the repository settings, set Pages source to "GitHub Actions". The Vite `base` is `/pointscape/`, and the workflow sets `VITE_SITE_URL` to the absolute site URL for the Open Graph image.
+`.github/workflows/deploy.yml` lints, tests, builds and publishes `dist/` to GitHub Pages on every push to `main`.
+In the repository settings, set Pages source to "GitHub Actions". The Vite `base` is `/pointscape/`, and the workflow
+sets `VITE_SITE_URL` to the absolute site URL for the Open Graph image.
 
 ## License
 
