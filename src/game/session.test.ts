@@ -76,7 +76,7 @@ describe('winning and losing', () => {
   });
 
   it('loses at zero lives (FR-7)', () => {
-    // Three arrows, all blocked, so each tap costs a life.
+    // 3 arrows, all blocked, so each tap costs a life.
     const jam: Level = {
       size: 6,
       mask: new Array(36).fill(true),
