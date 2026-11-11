@@ -1,0 +1,246 @@
+@import 'tailwindcss';
+
+@theme {
+  /* Rounded, chunky face to match the tube arrows and glossy buttons. Self-hosted, variable weight. */
+  --font-sans: 'Fredoka Variable', ui-rounded, system-ui, sans-serif;
+  --color-plate: #1e293b;
+  /* Vivid game colours. The same in both themes. They replace Tailwind's softer shades. */
+  --color-pool-orange: #ff8a00;
+  --color-pool-yellow: #ffe600;
+  --color-pool-teal: #00f5d0;
+  --color-pool-indigo: #5b6bff;
+  --color-pool-magenta: #ff2bd6;
+  --color-blocked: #ff4d5e;
+  /* Clear and blocked paths in the How to play pictures and the path preview. */
+  --color-ok: #4ade80;
+  --color-bad: #f87171;
+  /* Edge under the red Reset button. */
+  --color-danger-edge: #b91c1c;
+  /* Highlight on glossy buttons, and the base of every drop shadow. Both ignore the theme. */
+  --color-glint: #ffffff;
+  --color-shade: #000000;
+  --color-teal-200: #7dfbe8;
+  --color-teal-300: #00f5d0;
+  --color-teal-500: #00c9a7;
+  --color-teal-700: #008c75;
+  --color-indigo-400: #5b6bff;
+  --color-fuchsia-400: #ff2bd6;
+  --color-orange-400: #ff8a00;
+  --color-yellow-400: #ffe600;
+  --color-amber-400: #ffc400;
+  --color-red-400: #ff4d5e;
+  /* Headings and key text. Flips with the theme. */
+  --color-strong: #ffffff;
+  /* Dark text for bright buttons, in both themes. */
+  --color-ink: #020617;
+  /* Dark chip behind coloured text, so one vivid colour reads in both themes. */
+  --color-night: #0b1220;
+  --color-link: #00f5d0;
+  --color-caution: #ffc400;
+  --color-danger: #ff4d5e;
+  --color-accent-0: #00f5d0;
+  --color-accent-1: #7c8aff;
+  --color-accent-2: #ff55e0;
+  --color-accent-3: #ff9a1f;
+  --color-accent-4: #ffe600;
+}
+
+/*
+ * Colour scheme. Every colour in the game comes from this file.
+ * - Fixed colours (arrow pool, teal, feedback) are in @theme above and look the same in both themes.
+ * - Surfaces follow the theme. The slate scale flips below, so slate classes need no second set.
+ * - The values that the board, the splash and the browser bar need are plain custom properties
+ *   (--scene-*, --hud-*, --logo-*), which view/theme.ts reads at run time.
+ * index.html keeps its own copy for the moment before this file loads.
+ */
+:root {
+  --scene-board: #1e293b;
+  --scene-plate: #475569;
+  --scene-layer: 0.14;
+  --scene-dot: #475569;
+  --scene-sky: #e2e8f0;
+  --scene-rim: #a5f3fc;
+  --hud-bg: rgb(43 56 76 / 0.95);
+  --hud-edge: rgb(203 213 225 / 0.55);
+  --hud-ink: #ffffff;
+  --logo-word: #e2e8f0;
+  --logo-word-edge: #64748b;
+}
+
+/*
+ * Light theme: the slate scale runs backwards, so every slate class in the UI turns light
+ * without a second set of classes.
+ */
+[data-theme='light'] {
+  color-scheme: light;
+  --color-strong: #0f172a;
+  --color-slate-950: #f1f5f9;
+  --color-slate-900: #ffffff;
+  --color-slate-800: #e2e8f0;
+  --color-slate-700: #cbd5e1;
+  --color-slate-600: #94a3b8;
+  --color-slate-500: #64748b;
+  --color-slate-400: #475569;
+  --color-slate-300: #334155;
+  --color-slate-200: #1e293b;
+  --color-plate: #e2e8f0;
+  --scene-board: #e2e8f0;
+  /* A white plate vanishes on the pale board, so the light look tints its layers darker. */
+  --scene-plate: #475569;
+  --scene-layer: 0.1;
+  --scene-dot: #94a3b8;
+  --scene-sky: #ffffff;
+  --hud-bg: rgb(255 255 255 / 0.96);
+  --hud-edge: rgb(71 85 105 / 0.55);
+  --hud-ink: #0f172a;
+  --logo-word: #1e293b;
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+}
+
+/* Wordmark on Home and the name screen. The extrusion is stacked text-shadow. */
+@utility logo-word {
+  color: var(--logo-word);
+  text-shadow:
+    1px 1px 0 var(--logo-word-edge),
+    2px 2px 0 var(--logo-word-edge),
+    3px 3px 0 var(--logo-word-edge),
+    4px 4px 0 var(--logo-word-edge),
+    6px 8px 10px color-mix(in srgb, var(--color-shade) 50%, transparent);
+  transform: rotateX(12deg);
+}
+
+/* Floating panel over the board canvas. Lighter than a dark canvas, whiter than a pale one. */
+@utility hud-card {
+  background: var(--hud-bg);
+  border: 1px solid var(--hud-edge);
+  box-shadow:
+    0 2px 0 var(--hud-edge),
+    0 10px 22px color-mix(in srgb, var(--color-shade) 35%, transparent);
+  backdrop-filter: blur(10px);
+  color: var(--hud-ink);
+}
+
+/* Game scrollbar: a slim rounded thumb that follows the theme and lights up teal. */
+@utility scroll-game {
+  &::-webkit-scrollbar {
+    width: 14px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--color-slate-600);
+    border: 4px solid transparent;
+    border-radius: 999px;
+    background-clip: padding-box;
+  }
+
+  &::-webkit-scrollbar-thumb:hover,
+  &::-webkit-scrollbar-thumb:active {
+    background: var(--color-teal-300);
+    background-clip: padding-box;
+  }
+
+  /* Firefox has no pseudo-elements, only a colour and a width. */
+  @supports not selector(::-webkit-scrollbar) {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-slate-600) transparent;
+  }
+}
+
+/* Theme change: the new look spreads out as a circle from the toggle. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-new(root) {
+  clip-path: circle(0 at var(--theme-x, 50%) var(--theme-y, 50%));
+  animation: theme-reveal 0.65s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes theme-reveal {
+  to {
+    clip-path: circle(150vmax at var(--theme-x, 50%) var(--theme-y, 50%));
+  }
+}
+
+/* Loading screen: arrows slide off the small board and come back, a bar sweeps, tips fade in. */
+@keyframes load-arrow {
+  0%,
+  12% {
+    transform: translate(0, 0);
+    opacity: 1;
+  }
+  38% {
+    transform: translate(var(--dx), var(--dy));
+    opacity: 1;
+  }
+  39%,
+  86% {
+    transform: translate(var(--dx), var(--dy));
+    opacity: 0;
+  }
+  87% {
+    transform: translate(0, 0);
+    opacity: 0;
+  }
+  100% {
+    transform: translate(0, 0);
+    opacity: 1;
+  }
+}
+
+@keyframes load-bar {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(260%);
+  }
+}
+
+@keyframes load-tip {
+  from {
+    opacity: 0;
+  }
+}
+
+@utility load-arrow {
+  animation: load-arrow 4.2s cubic-bezier(0.5, 0, 0.8, 0.4) infinite;
+}
+
+@utility load-bar {
+  background: linear-gradient(
+    90deg,
+    var(--color-pool-teal),
+    var(--color-pool-indigo),
+    var(--color-pool-magenta),
+    var(--color-pool-orange),
+    var(--color-pool-yellow)
+  );
+  animation: load-bar 1.4s ease-in-out infinite;
+}
+
+@utility load-tip {
+  animation: load-tip 0.3s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .load-arrow,
+  .load-bar {
+    animation: none;
+  }
+
+  ::view-transition-group(root),
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
+}
