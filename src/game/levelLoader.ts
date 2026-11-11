@@ -126,7 +126,7 @@ export function prefetchLevel(
   level: number,
   builder?: LevelBuilder,
 ): void {
-  void loadLevel(sizeIndex, level, builder);
+  void loadLevel(sizeIndex, level, builder).catch(() => {});
 }
 
 /** Drop every cached level. Used by tests. */
