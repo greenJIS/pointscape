@@ -454,7 +454,7 @@ export function shapeFor(sizeIndex: number, level: number): Shape {
     return fallback;
   }
   const index =
-    (((level - 11) % allowed.length) + allowed.length) % allowed.length;
+    (((level - 10) % allowed.length) + allowed.length) % allowed.length;
   const picked = allowed[index];
   return picked ?? fallback;
 }

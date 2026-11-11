@@ -29,6 +29,7 @@ describe('shapes and masks', () => {
         const count = mask.filter(Boolean).length;
         if (size < shape.minSize) {
           // If excluded by minSize, it either has fewer than 60 cells or is disconnected
+          expect(count < 60 || !isConnected(mask, size)).toBe(true);
           continue;
         }
         expect(
@@ -45,6 +46,7 @@ describe('shapes and masks', () => {
         const shape = shapeFor(sizeIndex, level);
         expect(shape.id).toBe('square');
       }
+      expect(shapeFor(sizeIndex, 11).id).not.toBe('square');
     }
   });
 
