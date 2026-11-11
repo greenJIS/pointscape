@@ -1,6 +1,8 @@
+import { validateLevel } from './board';
 import { LEVELS_PER_SIZE, SIZES } from './difficulty';
 import { generateLevel, type GenParams } from './generator';
 import { maskFor, shapeFor } from './shapes';
+import { isSolvable } from './solver';
 import type { Level } from './types';
 
 const lerp = (a: number, b: number, t: number): number => a + (b - a) * t;
@@ -9,7 +11,11 @@ export function seedFor(sizeIndex: number, level: number): number {
   return 1000 + sizeIndex * 10000 + level * 37;
 }
 
-export function levelParams(sizeIndex: number, level: number): GenParams {
+export function levelParams(
+  sizeIndex: number,
+  level: number,
+  seedOverride?: number,
+): GenParams {
   if (
     !Number.isInteger(sizeIndex) ||
     sizeIndex < 0 ||
@@ -42,7 +48,7 @@ export function levelParams(sizeIndex: number, level: number): GenParams {
   return {
     size,
     mask,
-    seed: seedFor(sizeIndex, level),
+    seed: seedOverride ?? seedFor(sizeIndex, level),
     minLength,
     maxLength,
     bendChance,
@@ -51,5 +57,37 @@ export function levelParams(sizeIndex: number, level: number): GenParams {
   };
 }
 
-export const buildLevel = (sizeIndex: number, level: number): Level =>
-  generateLevel(levelParams(sizeIndex, level));
+export const buildLevel = (
+  sizeIndex: number,
+  level: number,
+  seed?: number,
+): Level => generateLevel(levelParams(sizeIndex, level, seed));
+
+export function buildSafeLevel(
+  sizeIndex: number,
+  level: number,
+  builder: (
+    sizeIndex: number,
+    level: number,
+    seed?: number,
+  ) => Level = buildLevel,
+): Level {
+  const baseSeed = seedFor(sizeIndex, level);
+  const maxAttempts = 100;
+  for (let offset = 0; offset < maxAttempts; offset++) {
+    const seed = baseSeed + offset;
+    try {
+      const board = builder(sizeIndex, level, seed);
+      if (validateLevel(board).length === 0 && isSolvable(board)) {
+        return board;
+      }
+    } catch (err) {
+      if (err instanceof RangeError) {
+        throw err;
+      }
+    }
+  }
+  throw new Error(
+    `Failed to generate a valid solvable level for sizeIndex ${sizeIndex} level ${level}`,
+  );
+}
