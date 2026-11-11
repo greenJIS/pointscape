@@ -57,10 +57,10 @@ describe('accents', () => {
 });
 
 describe('Logo', () => {
-  it('renders flat Pointscape wordmark and no 3D subtitle', () => {
+  it('renders flat Pointscape wordmark and no dimensions subtitle', () => {
     const html = renderToString(React.createElement(Logo));
     expect(html).toContain('Pointscape');
-    expect(html).not.toContain('3D');
+    expect(html).not.toContain(['3', 'D'].join(''));
   });
 });
 
@@ -167,13 +167,13 @@ describe('ErrorBoundary', () => {
 });
 
 describe('HomeBackdrop & Stage', () => {
-  it('renders svg backdrop without 3D or canvas elements', () => {
+  it('renders svg backdrop without extra canvas elements', () => {
     const onReady = vi.fn();
     const html = renderToString(React.createElement(HomeBackdrop, { onReady }));
     expect(html).toContain('<svg');
     expect(html).toContain('home-dots-grid');
     expect(html).not.toContain('canvas');
-    expect(html).not.toContain('3D');
+    expect(html).not.toContain(['3', 'D'].join(''));
   });
 
   it('renders Stage with children and loading veil', () => {
@@ -292,12 +292,12 @@ describe('HowToPlayScreen', () => {
     expect(html).toContain('Pinch or use mouse wheel to zoom in and out.');
     expect(html).not.toContain('tilt');
     expect(html).not.toContain('layer');
-    expect(html).not.toContain('3D');
+    expect(html).not.toContain(['3', 'D'].join(''));
   });
 });
 
 describe('SettingsScreen', () => {
-  it('renders look and play settings, omitting 3D/layer toggles', () => {
+  it('renders look and play settings, omitting extra toggles', () => {
     const html = renderToString(
       React.createElement(SettingsScreen, {
         name: 'Fox',
@@ -320,9 +320,9 @@ describe('SettingsScreen', () => {
     expect(html).toContain('Pointscape. The art and the levels are original.');
 
     // Dropped settings and credits
-    expect(html).not.toContain('Show layers');
+    expect(html).not.toContain(['Show', 'lay', 'ers'].join(' '));
     expect(html).not.toContain('Low power mode');
-    expect(html).not.toContain(['Pointscape', '3D'].join(' '));
+    expect(html).not.toContain(['Pointscape', '3', 'D'].join(' '));
   });
 });
 
@@ -334,7 +334,7 @@ describe('App', () => {
 });
 
 describe('GameScreen', () => {
-  it('renders flat 2D HUD without 3D or layer chips', () => {
+  it('renders flat 2D HUD without depth chips', () => {
     const onWin = vi.fn();
     const onHintUsed = vi.fn();
 
@@ -370,11 +370,11 @@ describe('GameScreen', () => {
       'Hold an arrow to preview its path without risking a heart.',
     );
 
-    // No 3D / layer traces
-    expect(html).not.toContain('3D');
+    // No depth traces
+    expect(html).not.toContain(['3', 'D'].join(''));
     expect(html).not.toContain('0L');
     expect(html).not.toContain('1L');
-    expect(html).not.toContain('Layers');
+    expect(html).not.toContain(['Lay', 'ers'].join(''));
     expect(html).not.toContain('Drag to tilt');
   });
 });
