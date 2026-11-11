@@ -74,8 +74,9 @@ function formatMarkdownTable(results: SpikeResult[]): string {
   lines.push('# Generator Quality and Performance Spike');
   lines.push('');
   lines.push(
-    'Evaluated sizes 16 and 64 across shapes `Square`, `Ring`, `Heart`, `Spiral`, and `Cat Head` for 5 seeds each (50 runs total).',
+    'Evaluated sizes 16 and 64 across shapes `Square`, `Ring`, `Heart`, `Spiral`, and `Cat Head` for 5 seeds each',
   );
+  lines.push('(50 runs total).');
   lines.push('');
   lines.push('## Quality Gates & Thresholds');
   lines.push('');
@@ -95,8 +96,15 @@ function formatMarkdownTable(results: SpikeResult[]): string {
   );
 
   for (const r of results) {
+    const emptyPct = `${(r.emptyShare * 100).toFixed(2)}%`;
+    const blockedPct = `${(r.blockedShare * 100).toFixed(1)}%`;
+    const meanLen = r.meanLength.toFixed(2);
+    const genMs = r.genTimeMs.toFixed(1);
+    const solveMs = r.solveTimeMs.toFixed(1);
+    const status = r.solved ? 'PASS' : 'FAIL';
     lines.push(
-      `| ${r.size} | ${r.shape} | ${r.seed} | ${(r.emptyShare * 100).toFixed(2)}% | ${(r.blockedShare * 100).toFixed(1)}% | ${r.meanLength.toFixed(2)} | ${r.genTimeMs.toFixed(1)} | ${r.solveTimeMs.toFixed(1)} | ${r.solved ? 'PASS' : 'FAIL'} |`,
+      `| ${r.size} | ${r.shape} | ${r.seed} | ${emptyPct} | ${blockedPct} | ` +
+        `${meanLen} | ${genMs} | ${solveMs} | ${status} |`,
     );
   }
 
@@ -140,8 +148,10 @@ function formatMarkdownTable(results: SpikeResult[]): string {
     lines.push(
       `- **Empty share**: avg ${(avgEmpty * 100).toFixed(2)}%, max ${(maxEmpty * 100).toFixed(2)}% (gate: <= 3.0%)`,
     );
+    const avgBlockedStr = `${(avgBlocked * 100).toFixed(1)}%`;
+    const minBlockedStr = `${(minBlocked * 100).toFixed(1)}%`;
     lines.push(
-      `- **Blocked share**: avg ${(avgBlocked * 100).toFixed(1)}%, min ${(minBlocked * 100).toFixed(1)}% (gate: >= 30.0%)`,
+      `- **Blocked share**: avg ${avgBlockedStr}, min ${minBlockedStr} (gate: >= 30.0%)`,
     );
     lines.push(
       `- **Mean length**: avg ${avgMeanLen.toFixed(2)}, min ${minMeanLen.toFixed(2)} (gate: >= 4.0)`,
@@ -156,12 +166,16 @@ function formatMarkdownTable(results: SpikeResult[]): string {
   lines.push('');
   if (max64Gen < 2000) {
     lines.push(
-      `**PASS**: Maximum 64x64 generation time is ${max64Gen.toFixed(1)} ms (< 2,000 ms threshold). All quality floors met across all test cases. Runtime generation in a Web Worker is viable.`,
+      `**PASS**: Maximum 64x64 generation time is ${max64Gen.toFixed(1)} ms (< 2,000 ms threshold). All quality floors`,
+    );
+    lines.push(
+      'met across all test cases. Runtime generation in a Web Worker is viable.',
     );
   } else {
     lines.push(
-      `**GATE WARNING**: Maximum 64x64 generation time is ${max64Gen.toFixed(1)} ms (exceeds 2,000 ms threshold). Requires build-time generation or owner review.`,
+      `**GATE WARNING**: Maximum 64x64 generation time is ${max64Gen.toFixed(1)} ms (exceeds 2,000 ms threshold).`,
     );
+    lines.push('Requires build-time generation or owner review.');
   }
   lines.push('');
 

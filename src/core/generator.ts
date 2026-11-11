@@ -377,6 +377,7 @@ function extendEnds(
           const crossing = lanes[cellIdx] ?? [];
           let blockedAhead = false;
           for (const otherId of crossing) {
+            if (otherId === arrow.id) continue;
             const otherPos = pos.get(otherId) ?? -1;
             if (otherPos >= arrowPos) {
               blockedAhead = true;
@@ -404,6 +405,7 @@ function extendEnds(
           const crossing = lanes[cellIdx] ?? [];
           let blockedAhead = false;
           for (const otherId of crossing) {
+            if (otherId === arrow.id) continue;
             const otherPos = pos.get(otherId) ?? -1;
             if (otherPos >= arrowPos) {
               blockedAhead = true;
