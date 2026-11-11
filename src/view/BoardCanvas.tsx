@@ -569,7 +569,9 @@ export function BoardCanvas({
         }
       }
     }
-    movedRef.current = false;
+    if (pointersRef.current.size === 0) {
+      movedRef.current = false;
+    }
   };
 
   const onPointerCancel = (e: React.PointerEvent<HTMLCanvasElement>) => {
