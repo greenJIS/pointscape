@@ -191,6 +191,17 @@ export function BoardCanvas({
     renderFrameRef.current = renderFrame;
   }, [renderFrame]);
 
+  useEffect(() => {
+    return () => {
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current);
+      }
+      if (holdTimerRef.current !== null) {
+        window.clearTimeout(holdTimerRef.current);
+      }
+    };
+  }, []);
+
   useImperativeHandle(
     ref,
     () => ({
@@ -329,6 +340,9 @@ export function BoardCanvas({
 
   const handleTap = useCallback(
     (arrowId: number) => {
+      if (slidesRef.current.has(arrowId) || bumpsRef.current.has(arrowId)) {
+        return;
+      }
       const arrow = level.arrows.find((a) => a.id === arrowId);
       if (!arrow) return;
 
@@ -431,6 +445,7 @@ export function BoardCanvas({
       clearHoldTimer();
       previewingRef.current = false;
       holdPreviewRef.current = null;
+      movedRef.current = true;
       requestRedraw();
 
       const pts = Array.from(pointersRef.current.values());

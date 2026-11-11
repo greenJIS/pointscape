@@ -155,6 +155,39 @@ describe('draw', () => {
     expect(calls.arc).toBe(64);
   });
 
+  it('draw renders win ripple even when showDots is false', () => {
+    const size = 8;
+    const level: Level = {
+      size,
+      mask: new Array<boolean>(64).fill(true),
+      arrows: [],
+    };
+    const viewport = { width: 400, height: 400 };
+    const cam = fit(viewport, size);
+    const { ctx, calls } = createMockContext();
+
+    draw(
+      ctx,
+      {
+        level,
+        cam,
+        viewport,
+        colors: [],
+        theme: THEME_COLORS.light,
+        showDots: false,
+        winRipple: {
+          t0: 0,
+          origin: v(0, 0),
+        },
+      },
+      0.1,
+    );
+
+    // Ripple wave activates rippling dots even though normal dots are off
+    expect(calls.fill).toBeGreaterThanOrEqual(1);
+    expect(calls.arc).toBeGreaterThan(0);
+  });
+
   it('drawArrows respects idleIds and filters out removed arrows', () => {
     const level: Level = {
       size: 8,

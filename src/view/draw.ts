@@ -122,6 +122,7 @@ export function drawMaskDots(
   const baseRadius = 0.07;
 
   if (!winRipple) {
+    if (state.showDots === false) return;
     ctx.beginPath();
     for (let y = 0; y < size; y++) {
       for (let x = 0; x < size; x++) {
@@ -158,14 +159,16 @@ export function drawMaskDots(
         const r = baseRadius * (1 + (bump * 0.22) / 0.07);
         const color = POOL[(x + y) % POOL.length] ?? theme.ok;
         ripplingDots.push({ x: cx, y: cy, r, color });
-      } else {
+      } else if (state.showDots !== false) {
         ctx.moveTo(cx + baseRadius, cy);
         ctx.arc(cx, cy, baseRadius, 0, Math.PI * 2);
       }
     }
   }
-  ctx.fillStyle = theme.dot;
-  ctx.fill();
+  if (state.showDots !== false) {
+    ctx.fillStyle = theme.dot;
+    ctx.fill();
+  }
 
   // Draw rippling dots grouped by color or individual fill
   for (const dot of ripplingDots) {
@@ -504,7 +507,7 @@ export function draw(
   ctx.translate(originX, originY);
   ctx.scale(cSize, cSize);
 
-  if (state.showDots !== false) {
+  if (state.showDots !== false || state.winRipple) {
     drawMaskDots(ctx, state, now);
   }
 
