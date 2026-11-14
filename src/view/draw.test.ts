@@ -271,8 +271,9 @@ describe('draw', () => {
       ANIM.forward * 0.5,
     );
 
-    // Both arrows are drawn (bump + jiggle)
-    expect(calls.fill).toBe(4);
+    // Both arrows are drawn (bump + jiggle). Heads are filled once for the
+    // shadows and once per colour group, and the flash makes two colours.
+    expect(calls.fill).toBe(3);
   });
 
   it('drawArrows animates hint pulse', () => {

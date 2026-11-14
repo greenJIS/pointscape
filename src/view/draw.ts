@@ -54,6 +54,8 @@ export interface DrawState {
   readonly theme: ThemeColors;
   readonly idleIds?: ReadonlySet<number>;
   readonly showDots?: boolean;
+  /** Clip to a rounded box with a faint border, so the board stays inside a fixed box. */
+  readonly frame?: boolean;
   readonly hintId?: number | null;
   readonly hintStart?: number;
   readonly slides?: ReadonlyMap<number, ActiveSlide>;
@@ -213,7 +215,7 @@ export function drawArrows(
   const coreWidth = edgeWidth * (0.2 / 0.3);
   const glintWidth = edgeWidth * (0.05 / 0.3);
   const shadowWidth = edgeWidth;
-  const headStrokeWidth = edgeWidth * (0.04 / 0.3);
+  const headStrokeWidth = edgeWidth * (0.1 / 0.3);
 
   const prepared: PreparedArrow[] = [];
 
@@ -332,125 +334,113 @@ export function drawArrows(
     });
   }
 
+  if (prepared.length === 0) return;
+
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
 
-  const shadowDx = 0.06;
-  const shadowDy = 0.1;
-  const glintDx = -0.04;
-  const glintDy = -0.04;
+  // Each pass groups arrows by style and strokes them in one path. A path
+  // call per arrow is far too slow on a 64x64 board with hundreds of arrows.
+  const bodies = (shift: Vec, group: readonly PreparedArrow[]): void => {
+    for (const item of group) {
+      const [first, ...rest] = item.points;
+      if (!first || rest.length === 0) continue;
+      ctx.moveTo(first.x + shift.x, first.y + shift.y);
+      for (const pt of rest) ctx.lineTo(pt.x + shift.x, pt.y + shift.y);
+    }
+  };
+  const heads = (shift: Vec, group: readonly PreparedArrow[]): void => {
+    for (const item of group) {
+      const [first, ...rest] = item.headPoints;
+      if (!first) continue;
+      ctx.moveTo(first.x + shift.x, first.y + shift.y);
+      for (const pt of rest) ctx.lineTo(pt.x + shift.x, pt.y + shift.y);
+      ctx.closePath();
+    }
+  };
+  const groupBy = (
+    key: (item: PreparedArrow) => string,
+  ): Map<string, PreparedArrow[]> => {
+    const groups = new Map<string, PreparedArrow[]>();
+    for (const item of prepared) {
+      const k = key(item);
+      const g = groups.get(k);
+      if (g) g.push(item);
+      else groups.set(k, [item]);
+    }
+    return groups;
+  };
+
+  const none: Vec = { x: 0, y: 0 };
+  const shadow: Vec = { x: 0.06, y: 0.1 };
+  const glint: Vec = { x: -0.04, y: -0.04 };
 
   // Pass 1: Drop shadows
-  for (const item of prepared) {
-    if (item.points.length >= 2) {
-      ctx.beginPath();
-      const p0 = item.points[0];
-      if (p0) {
-        ctx.moveTo(p0.x + shadowDx, p0.y + shadowDy);
-        for (let i = 1; i < item.points.length; i++) {
-          const pt = item.points[i];
-          if (pt) ctx.lineTo(pt.x + shadowDx, pt.y + shadowDy);
-        }
-      }
-      ctx.lineWidth = shadowWidth;
-      ctx.strokeStyle = 'rgba(0, 0, 0, 0.35)';
-      ctx.stroke();
-    }
-
-    const h0 = item.headPoints[0];
-    if (h0) {
-      ctx.beginPath();
-      ctx.moveTo(h0.x + shadowDx, h0.y + shadowDy);
-      for (let i = 1; i < item.headPoints.length; i++) {
-        const pt = item.headPoints[i];
-        if (pt) ctx.lineTo(pt.x + shadowDx, pt.y + shadowDy);
-      }
-      ctx.closePath();
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
-      ctx.fill();
-    }
-  }
+  ctx.beginPath();
+  bodies(shadow, prepared);
+  ctx.lineWidth = shadowWidth;
+  ctx.strokeStyle = 'rgba(0, 0, 0, 0.35)';
+  ctx.stroke();
+  ctx.beginPath();
+  heads(shadow, prepared);
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+  ctx.fill();
 
   // Pass 2: Outer edge
-  for (const item of prepared) {
-    if (item.points.length >= 2) {
-      ctx.beginPath();
-      const p0 = item.points[0];
-      if (p0) {
-        ctx.moveTo(p0.x, p0.y);
-        for (let i = 1; i < item.points.length; i++) {
-          const pt = item.points[i];
-          if (pt) ctx.lineTo(pt.x, pt.y);
-        }
-      }
-      ctx.lineWidth = edgeWidth;
-      ctx.strokeStyle = item.edgeColor;
-      ctx.stroke();
-    }
-
-    const h0 = item.headPoints[0];
-    if (h0) {
-      ctx.beginPath();
-      ctx.moveTo(h0.x, h0.y);
-      for (let i = 1; i < item.headPoints.length; i++) {
-        const pt = item.headPoints[i];
-        if (pt) ctx.lineTo(pt.x, pt.y);
-      }
-      ctx.closePath();
-      ctx.lineWidth = headStrokeWidth;
-      ctx.strokeStyle = item.edgeColor;
-      ctx.stroke();
-    }
+  for (const [color, group] of groupBy((i) => i.edgeColor)) {
+    ctx.beginPath();
+    bodies(none, group);
+    ctx.lineWidth = edgeWidth;
+    ctx.strokeStyle = color;
+    ctx.stroke();
+    ctx.beginPath();
+    heads(none, group);
+    ctx.lineWidth = headStrokeWidth;
+    ctx.stroke();
   }
 
   // Pass 3: Core fill
-  for (const item of prepared) {
-    if (item.points.length >= 2) {
-      ctx.beginPath();
-      const p0 = item.points[0];
-      if (p0) {
-        ctx.moveTo(p0.x, p0.y);
-        for (let i = 1; i < item.points.length; i++) {
-          const pt = item.points[i];
-          if (pt) ctx.lineTo(pt.x, pt.y);
-        }
-      }
-      ctx.lineWidth = coreWidth;
-      ctx.strokeStyle = item.color;
-      ctx.stroke();
-    }
-
-    const h0 = item.headPoints[0];
-    if (h0) {
-      ctx.beginPath();
-      ctx.moveTo(h0.x, h0.y);
-      for (let i = 1; i < item.headPoints.length; i++) {
-        const pt = item.headPoints[i];
-        if (pt) ctx.lineTo(pt.x, pt.y);
-      }
-      ctx.closePath();
-      ctx.fillStyle = item.color;
-      ctx.fill();
-    }
+  for (const [color, group] of groupBy((i) => i.color)) {
+    ctx.beginPath();
+    bodies(none, group);
+    ctx.lineWidth = coreWidth;
+    ctx.strokeStyle = color;
+    ctx.stroke();
+    ctx.beginPath();
+    heads(none, group);
+    ctx.fillStyle = color;
+    ctx.fill();
   }
 
   // Pass 4: Glint highlight
+  ctx.beginPath();
+  bodies(glint, prepared);
+  ctx.lineWidth = glintWidth;
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.55)';
+  ctx.stroke();
+
+  // The head gets the same gloss: a thin highlight on its upper edges, inset
+  // from the rim and nudged toward the light like the body's.
+  ctx.beginPath();
   for (const item of prepared) {
-    if (item.points.length >= 2) {
-      ctx.beginPath();
-      const p0 = item.points[0];
-      if (p0) {
-        ctx.moveTo(p0.x + glintDx, p0.y + glintDy);
-        for (let i = 1; i < item.points.length; i++) {
-          const pt = item.points[i];
-          if (pt) ctx.lineTo(pt.x + glintDx, pt.y + glintDy);
-        }
-      }
-      ctx.lineWidth = glintWidth;
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.55)';
-      ctx.stroke();
-    }
+    const [tip, left, notch] = item.headPoints;
+    if (!tip || !left || !notch) continue;
+    const mx = (tip.x + left.x + notch.x) / 3;
+    const my = (tip.y + left.y + notch.y) / 3;
+    const inset = (v: Vec): Vec => ({
+      x: mx + (v.x - mx) * 0.6 + glint.x,
+      y: my + (v.y - my) * 0.6 + glint.y,
+    });
+    const a = inset(tip);
+    const b = inset(left);
+    const c = inset(notch);
+    ctx.moveTo(c.x, c.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.lineTo(a.x, a.y);
   }
+  ctx.lineWidth = glintWidth;
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.55)';
+  ctx.stroke();
 }
 
 export function drawHoldPreview(
@@ -502,7 +492,32 @@ export function draw(
 
   ctx.save();
   ctx.fillStyle = theme.board;
-  ctx.fillRect(0, 0, viewport.width, viewport.height);
+  if (state.frame) {
+    // The box is fixed: zoom and pan move the board inside it, never the box.
+    const w = viewport.width;
+    const h = viewport.height;
+    const radius = Math.min(w, h) * 0.015;
+    const pad = viewport.pad ?? 0;
+    ctx.strokeStyle = theme.dot;
+    ctx.globalAlpha = 0.35;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(1, 1, w - 2, h - 2, radius);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    // Zoomed arrows stop at the padding, so it stays the same at every zoom.
+    ctx.beginPath();
+    ctx.roundRect(
+      pad,
+      pad,
+      w - 2 * pad,
+      h - 2 * pad,
+      Math.max(0, radius - pad),
+    );
+    ctx.clip();
+  } else {
+    ctx.fillRect(0, 0, viewport.width, viewport.height);
+  }
 
   ctx.translate(originX, originY);
   ctx.scale(cSize, cSize);

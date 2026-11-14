@@ -1,16 +1,10 @@
-import {
-  useCallback,
-  useEffect,
-  useImperativeHandle,
-  useMemo,
-  useRef,
-} from 'react';
+import { useCallback, useEffect, useImperativeHandle, useRef } from 'react';
 import { blockerOf, exitRay, headOf, occupancy } from '../core/board';
 import type { Level, Vec } from '../core/types';
 import { key } from '../core/vec';
 import type { ThemeMode } from '../game/settings';
-import type { Camera, Viewport } from './camera';
-import { cellSize, fit, panBy, toCell, zoomAt } from './camera';
+import type { Camera, Insets, Viewport } from './camera';
+import { areaOf, cellSize, fit, panBy, toCell, zoomAt } from './camera';
 import type {
   ActiveBump,
   ActiveFlash,
@@ -22,7 +16,7 @@ import type {
 import { draw } from './draw';
 import { ANIM, bumpDistance, finishDistance, slideDistance } from './motion';
 import { pickArrow } from './pick';
-import { readTheme } from './theme';
+import { THEME_COLORS } from './theme';
 
 export interface BoardCanvasProps {
   readonly level: Level;
@@ -33,6 +27,8 @@ export interface BoardCanvasProps {
   readonly speedRate?: number;
   readonly hintId?: number | null;
   readonly isWon?: boolean;
+  /** Padding in px the fitted board stays out of, for the HUD rows. */
+  readonly inset?: Insets;
   readonly onTap: (arrowId: number) => void;
   readonly onBlocked?: (arrowId: number, blockerId: number) => void;
   readonly ref?: React.Ref<BoardCanvasHandle>;
@@ -50,6 +46,13 @@ interface PointerInfo {
   startY: number;
 }
 
+/** Fixed padding in pixels between the box edge and the board, at every zoom. */
+const BOX_PAD = 6;
+
+const NO_INSET: Insets = { top: 0, right: 0, bottom: 0, left: 0 };
+/** Seconds the reset-view button takes to ease back, as in the 3D game. */
+const VIEW_RESET_TIME = 0.5;
+
 export function BoardCanvas({
   level,
   idleIds,
@@ -59,15 +62,28 @@ export function BoardCanvas({
   speedRate = 1,
   hintId = null,
   isWon = false,
+  inset = NO_INSET,
   onTap,
   onBlocked,
   ref,
 }: BoardCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const camRef = useRef<Camera>(fit());
-  const viewportRef = useRef<Viewport>({ width: 0, height: 0 });
+  const camTweenRef = useRef<{
+    t0: number;
+    from: Camera;
+    to: Camera;
+    last: Camera;
+  } | null>(null);
+  const viewportRef = useRef<Viewport>({
+    width: 0,
+    height: 0,
+    square: true,
+  });
+  const insetRef = useRef<Insets>(inset);
 
-  const themeColors = useMemo(() => readTheme(theme), [theme]);
+  // Read from the mode itself: the CSS variables only flip after this render.
+  const themeColors = THEME_COLORS[theme];
 
   const slidesRef = useRef<Map<number, ActiveSlide>>(new Map());
   const bumpsRef = useRef<Map<number, ActiveBump>>(new Map());
@@ -98,9 +114,64 @@ export function BoardCanvas({
     });
   }, []);
 
+  /** True when a canvas point is inside the fixed box; arrows outside it are clipped away. */
+  const inBox = (pt: Vec): boolean => {
+    const a = areaOf(viewportRef.current);
+    return (
+      pt.x >= a.left &&
+      pt.x <= a.left + a.width &&
+      pt.y >= a.top &&
+      pt.y <= a.top + a.height
+    );
+  };
+
+  /** Eases the camera toward its tween target, as the 3D game eases its view reset. */
+  const stepCamTween = useCallback((now: number): void => {
+    const tw = camTweenRef.current;
+    if (!tw) return;
+    // A drag, pinch or wheel changed the camera: the player has taken over.
+    if (camRef.current !== tw.last) {
+      camTweenRef.current = null;
+      return;
+    }
+    const k = Math.min(1, (now - tw.t0) / VIEW_RESET_TIME);
+    const e = 1 - Math.pow(1 - k, 3);
+    const cam: Camera = {
+      zoom: tw.from.zoom + (tw.to.zoom - tw.from.zoom) * e,
+      panX: tw.from.panX + (tw.to.panX - tw.from.panX) * e,
+      panY: tw.from.panY + (tw.to.panY - tw.from.panY) * e,
+    };
+    camRef.current = k >= 1 ? tw.to : cam;
+    tw.last = camRef.current;
+    if (k >= 1) camTweenRef.current = null;
+  }, []);
+
+  /** Moves the camera to the fitted view, easing unless the player prefers reduced motion. */
+  const animateToFit = useCallback((): void => {
+    const to = fit(viewportRef.current, level.size);
+    const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const from = camRef.current;
+    if (
+      still ||
+      (from.zoom === to.zoom && from.panX === to.panX && from.panY === to.panY)
+    ) {
+      camTweenRef.current = null;
+      camRef.current = to;
+    } else {
+      camTweenRef.current = {
+        t0: performance.now() / 1000,
+        from,
+        to,
+        last: from,
+      };
+    }
+    requestRedraw();
+  }, [level.size, requestRedraw]);
+
   const renderFrame = useCallback(
     (nowMs: number) => {
       rafIdRef.current = null;
+      stepCamTween(nowMs / 1000);
       const canvas = canvasRef.current;
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
@@ -148,16 +219,22 @@ export function BoardCanvas({
         typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
+      // The camera works in the inset rect; draw it there, over a full-canvas fill.
+      const area = areaOf(vp);
+      ctx.clearRect(0, 0, vp.width, vp.height);
+      ctx.save();
+      ctx.translate(area.left, area.top);
       draw(
         ctx,
         {
           level,
           cam: camRef.current,
-          viewport: vp,
+          viewport: { width: area.width, height: area.height, pad: vp.pad },
           colors,
           theme: themeColors,
           idleIds,
           showDots,
+          frame: true,
           hintId,
           hintStart: hintStartRef.current,
           slides: slidesRef.current,
@@ -169,6 +246,7 @@ export function BoardCanvas({
         },
         now,
       );
+      ctx.restore();
 
       const hasAnimations =
         slidesRef.current.size > 0 ||
@@ -176,6 +254,7 @@ export function BoardCanvas({
         jigglesRef.current.size > 0 ||
         flashesRef.current.size > 0 ||
         winRippleRef.current !== null ||
+        camTweenRef.current !== null ||
         hintId != null;
 
       if (hasAnimations) {
@@ -184,7 +263,7 @@ export function BoardCanvas({
         });
       }
     },
-    [level, colors, themeColors, idleIds, showDots, hintId],
+    [level, colors, themeColors, idleIds, showDots, hintId, stepCamTween],
   );
 
   useEffect(() => {
@@ -195,6 +274,9 @@ export function BoardCanvas({
     return () => {
       if (rafIdRef.current !== null) {
         cancelAnimationFrame(rafIdRef.current);
+        // Clear it, or a remount (React StrictMode in dev) would see a frame
+        // as pending forever and never draw again.
+        rafIdRef.current = null;
       }
       if (holdTimerRef.current !== null) {
         window.clearTimeout(holdTimerRef.current);
@@ -206,8 +288,7 @@ export function BoardCanvas({
     ref,
     () => ({
       resetView() {
-        camRef.current = fit(viewportRef.current, level.size);
-        requestRedraw();
+        animateToFit();
       },
       revealArrow(id: number) {
         const arrow = level.arrows.find((a) => a.id === id);
@@ -230,8 +311,9 @@ export function BoardCanvas({
         const cSize = cellSize(camRef.current, vp, level.size);
         const boardW = level.size * cSize;
         const boardH = level.size * cSize;
-        const maxPanX = Math.max(0, (boardW - vp.width) / 2);
-        const maxPanY = Math.max(0, (boardH - vp.height) / 2);
+        const area = areaOf(vp);
+        const maxPanX = Math.max(0, (boardW - area.width) / 2);
+        const maxPanY = Math.max(0, (boardH - area.height) / 2);
         const targetPanX = Math.max(
           -maxPanX,
           Math.min(maxPanX, boardW / 2 - centerCell.x * cSize),
@@ -248,7 +330,7 @@ export function BoardCanvas({
         requestRedraw();
       },
     }),
-    [level, requestRedraw],
+    [level, animateToFit, requestRedraw],
   );
 
   // ResizeObserver & devicePixelRatio
@@ -263,12 +345,18 @@ export function BoardCanvas({
       const dpr =
         typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
 
-      viewportRef.current = { width, height };
+      viewportRef.current = {
+        width,
+        height,
+        inset: insetRef.current,
+        square: true,
+        pad: BOX_PAD,
+      };
       canvas.width = Math.round(width * dpr);
       canvas.height = Math.round(height * dpr);
 
       const cam = camRef.current;
-      camRef.current = panBy(cam, 0, 0, { width, height }, level.size);
+      camRef.current = panBy(cam, 0, 0, viewportRef.current, level.size);
       requestRedraw();
     };
 
@@ -276,8 +364,56 @@ export function BoardCanvas({
     observer.observe(canvas);
     updateSize();
 
-    return () => observer.disconnect();
+    // A pixel-ratio change (browser zoom, moving between screens) can leave the size alone.
+    let media: MediaQueryList | null = null;
+    const watchRatio = () => {
+      media?.removeEventListener('change', onRatio);
+      media = window.matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`);
+      media.addEventListener('change', onRatio);
+    };
+    const onRatio = () => {
+      updateSize();
+      watchRatio();
+    };
+    watchRatio();
+
+    return () => {
+      observer.disconnect();
+      media?.removeEventListener('change', onRatio);
+    };
   }, [level.size, requestRedraw]);
+
+  // The HUD moved (breakpoint, coach card): refit inside the new rect.
+  useEffect(() => {
+    const next = {
+      top: inset.top,
+      right: inset.right,
+      bottom: inset.bottom,
+      left: inset.left,
+    };
+    insetRef.current = next;
+    const cur = viewportRef.current;
+    viewportRef.current = {
+      ...cur,
+      inset: next,
+      pad: BOX_PAD,
+    };
+    camRef.current = panBy(
+      camRef.current,
+      0,
+      0,
+      viewportRef.current,
+      level.size,
+    );
+    requestRedraw();
+  }, [
+    inset.top,
+    inset.right,
+    inset.bottom,
+    inset.left,
+    level.size,
+    requestRedraw,
+  ]);
 
   // Level reset
   useEffect(() => {
@@ -418,7 +554,9 @@ export function BoardCanvas({
           level.size,
         );
         const cSize = cellSize(camRef.current, viewportRef.current, level.size);
-        const id = pickArrow(level, idleIds, cell, cSize);
+        const id = inBox(pt)
+          ? pickArrow(level, idleIds, cell, cSize)
+          : undefined;
         if (id !== undefined) {
           const arrow = level.arrows.find((a) => a.id === id);
           if (arrow) {
@@ -539,20 +677,8 @@ export function BoardCanvas({
     if (!movedRef.current && p) {
       const now = performance.now();
       const last = lastTapRef.current;
-      if (
-        last &&
-        now - last.time < 300 &&
-        Math.hypot(p.x - last.x, p.y - last.y) < 20
-      ) {
-        lastTapRef.current = null;
-        camRef.current = fit(viewportRef.current, level.size);
-        requestRedraw();
-        return;
-      }
-
-      lastTapRef.current = { x: p.x, y: p.y, time: now };
-
       const canvas = canvasRef.current;
+      let arrowId: number | undefined;
       if (canvas) {
         const rect = canvas.getBoundingClientRect();
         const pt = { x: p.x - rect.left, y: p.y - rect.top };
@@ -563,10 +689,25 @@ export function BoardCanvas({
           level.size,
         );
         const cSize = cellSize(camRef.current, viewportRef.current, level.size);
-        const arrowId = pickArrow(level, idleIds, cell, cSize);
-        if (arrowId !== undefined) {
-          handleTap(arrowId);
-        }
+        arrowId = inBox(pt)
+          ? pickArrow(level, idleIds, cell, cSize)
+          : undefined;
+      }
+      // Double tap on empty space refits the view. On an arrow it is two taps.
+      if (
+        arrowId === undefined &&
+        last &&
+        now - last.time < 300 &&
+        Math.hypot(p.x - last.x, p.y - last.y) < 20
+      ) {
+        lastTapRef.current = null;
+        animateToFit();
+        return;
+      }
+
+      lastTapRef.current = { x: p.x, y: p.y, time: now };
+      if (arrowId !== undefined) {
+        handleTap(arrowId);
       }
     }
     if (pointersRef.current.size === 0) {

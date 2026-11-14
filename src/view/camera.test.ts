@@ -134,3 +134,57 @@ describe('camera', () => {
     });
   });
 });
+
+describe('camera inset', () => {
+  const size = 16;
+  const inset = { top: 100, right: 20, bottom: 200, left: 20 };
+  const vp: Viewport = { width: 800, height: 900, inset };
+  // Inset rect: x 20..780 (760 wide), y 100..700 (600 tall).
+
+  it('fits the board inside the inset rect at zoom 1', () => {
+    const cam = fit(vp, size);
+    const tl = toScreen(cam, { x: 0, y: 0 }, vp, size);
+    const br = toScreen(cam, { x: size, y: size }, vp, size);
+    expect(cellSize(cam, vp, size)).toBe(600 / 16);
+    expect(tl.y).toBeGreaterThanOrEqual(inset.top);
+    expect(br.y).toBeLessThanOrEqual(900 - inset.bottom);
+    expect(tl.x).toBeGreaterThanOrEqual(inset.left);
+    expect(br.x).toBeLessThanOrEqual(800 - inset.right);
+  });
+
+  it('does not pan at the fitted zoom', () => {
+    const cam = panBy(fit(vp, size), 50, -50, vp, size);
+    expect(cam.panX).toBeCloseTo(0);
+    expect(cam.panY).toBeCloseTo(0);
+  });
+
+  it('clamps pan so board edges stay at the inset rect when zoomed', () => {
+    const zoomed: Camera = { zoom: 2, panX: 0, panY: 0 };
+    const far = panBy(zoomed, 9999, 9999, vp, size);
+    const tl = toScreen(far, { x: 0, y: 0 }, vp, size);
+    expect(tl.x).toBeCloseTo(inset.left);
+    expect(tl.y).toBeCloseTo(inset.top);
+  });
+
+  it('zoom stays within 1..8 and toCell round-trips toScreen', () => {
+    const focus = { x: 400, y: 400 };
+    const out = zoomAt(fit(vp, size), 0.1, focus, vp, size);
+    expect(out.zoom).toBe(1);
+    const big = zoomAt(fit(vp, size), 100, focus, vp, size);
+    expect(big.zoom).toBe(8);
+    const cell = { x: 3.5, y: 9.25 };
+    const back = toCell(big, toScreen(big, cell, vp, size), vp, size);
+    expect(back.x).toBeCloseTo(cell.x);
+    expect(back.y).toBeCloseTo(cell.y);
+  });
+
+  it('zoom keeps the focus cell under the pointer', () => {
+    const focus = { x: 300, y: 350 };
+    const cam = fit(vp, size);
+    const before = toCell(cam, focus, vp, size);
+    const next = zoomAt(cam, 3, focus, vp, size);
+    const after = toCell(next, focus, vp, size);
+    expect(after.x).toBeCloseTo(before.x);
+    expect(after.y).toBeCloseTo(before.y);
+  });
+});
