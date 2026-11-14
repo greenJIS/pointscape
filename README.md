@@ -26,6 +26,7 @@ Other commands:
 
 ```bash
 npm test             # unit tests (Vitest)
+FULL=1 npm test      # also builds and solves all 1,000 levels (about 3 minutes)
 npm run lint         # ESLint, including canonical Tailwind class checks
 npm run format:check # Prettier
 npm run build        # type check and production build into dist/
@@ -52,7 +53,8 @@ The design documents live in `docs/` on the author's machine and are not publish
 
 ## Deploy
 
-`.github/workflows/deploy.yml` lints, tests, builds and publishes `dist/` to GitHub Pages on every push to `main`.
+`.github/workflows/deploy.yml` lints, tests, solves all 1,000 levels (`FULL=1 npm test`, which fails the build if any level is
+unsolvable), builds and publishes `dist/` to GitHub Pages on every push to `main`.
 In the repository settings, set Pages source to "GitHub Actions". The Vite `base` is `/pointscape/`, and the workflow
 sets `VITE_SITE_URL` to the absolute site URL for the Open Graph image.
 

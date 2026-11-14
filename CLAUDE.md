@@ -26,6 +26,7 @@ owner's machine and are not on GitHub.
 - `npm run dev`: dev server. The developer unlock-all switch is only available here.
 - `npm run build`: type check, then production build to `dist/`.
 - `npm test`: Vitest, once. `npm run test:watch` for watch mode.
+- `FULL=1 npm test`: also builds and solves all 1,000 levels (about 3 minutes). CI runs it before every build.
 - `npm run lint`, `npm run format:check`, `npm run format`. Prettier ignores `docs/` and `.superpowers/`.
 
 ## Architecture
