@@ -1,251 +1,186 @@
-import { useEffect } from 'react';
-import { POOL } from '../view/palette';
+import { useEffect, useRef } from 'react';
+import { buildLevel } from '../core/levels';
+import { solve } from '../core/solver';
+import type { Level } from '../core/types';
+import { draw, type ActiveSlide } from '../view/draw';
+import { finishDistance, slideDistance } from '../view/motion';
+import { arrowColors } from '../view/palette';
+import { THEME_COLORS } from '../view/theme';
 
 interface Props {
   readonly dark?: boolean;
   readonly onReady?: () => void;
 }
 
-interface BackdropArrow {
-  readonly id: number;
-  readonly x: number;
-  readonly y: number;
-  readonly length: number;
-  readonly dir: 'r' | 'l' | 'u' | 'd';
-  readonly color: string;
-  readonly delay: number;
-  readonly duration: number;
-}
-
-const ARROWS: readonly BackdropArrow[] = [
-  {
-    id: 1,
-    x: 80,
-    y: 120,
-    length: 110,
-    dir: 'r',
-    color: POOL[2] ?? '#00f5d0',
-    delay: 0,
-    duration: 6,
-  },
-  {
-    id: 2,
-    x: 260,
-    y: 220,
-    length: 140,
-    dir: 'd',
-    color: POOL[0] ?? '#ff8a00',
-    delay: 1.2,
-    duration: 7,
-  },
-  {
-    id: 3,
-    x: 120,
-    y: 540,
-    length: 130,
-    dir: 'u',
-    color: POOL[3] ?? '#5b6bff',
-    delay: 0.5,
-    duration: 6.5,
-  },
-  {
-    id: 4,
-    x: 60,
-    y: 720,
-    length: 150,
-    dir: 'r',
-    color: POOL[1] ?? '#ffe600',
-    delay: 2,
-    duration: 8,
-  },
-  {
-    id: 5,
-    x: 820,
-    y: 140,
-    length: 130,
-    dir: 'd',
-    color: POOL[4] ?? '#ff2bd6',
-    delay: 0.8,
-    duration: 6.2,
-  },
-  {
-    id: 6,
-    x: 920,
-    y: 380,
-    length: 120,
-    dir: 'l',
-    color: POOL[2] ?? '#00f5d0',
-    delay: 1.8,
-    duration: 7.2,
-  },
-  {
-    id: 7,
-    x: 850,
-    y: 680,
-    length: 160,
-    dir: 'u',
-    color: POOL[0] ?? '#ff8a00',
-    delay: 2.5,
-    duration: 6.8,
-  },
-  {
-    id: 8,
-    x: 680,
-    y: 820,
-    length: 140,
-    dir: 'l',
-    color: POOL[3] ?? '#5b6bff',
-    delay: 1.1,
-    duration: 7.5,
-  },
-  {
-    id: 9,
-    x: 340,
-    y: 880,
-    length: 100,
-    dir: 'r',
-    color: POOL[4] ?? '#ff2bd6',
-    delay: 3,
-    duration: 6,
-  },
-];
-
-function ArrowPath({ arrow }: { readonly arrow: BackdropArrow }) {
-  const { x, y, length, dir, color, delay, duration } = arrow;
-  const strokeWidth = 14;
-  const headSize = 18;
-
-  let x2 = x;
-  let y2 = y;
-  let headPath = '';
-  let animClass = '';
-
-  switch (dir) {
-    case 'r':
-      x2 = x + length;
-      headPath = `M ${x2 + 4} ${y} L ${x2 - headSize} ${y - headSize * 0.9} L ${x2 - headSize} ${y + headSize * 0.9} Z`;
-      animClass = 'backdrop-slide-h';
-      break;
-    case 'l':
-      x2 = x - length;
-      headPath = `M ${x2 - 4} ${y} L ${x2 + headSize} ${y - headSize * 0.9} L ${x2 + headSize} ${y + headSize * 0.9} Z`;
-      animClass = 'backdrop-slide-h-rev';
-      break;
-    case 'd':
-      y2 = y + length;
-      headPath = `M ${x} ${y2 + 4} L ${x - headSize * 0.9} ${y2 - headSize} L ${x + headSize * 0.9} ${y2 - headSize} Z`;
-      animClass = 'backdrop-slide-v';
-      break;
-    case 'u':
-      y2 = y - length;
-      headPath = `M ${x} ${y2 - 4} L ${x - headSize * 0.9} ${y2 + headSize} L ${x + headSize * 0.9} ${y2 + headSize} Z`;
-      animClass = 'backdrop-slide-v-rev';
-      break;
-  }
-
-  return (
-    <g
-      className={animClass}
-      style={{
-        animationDuration: `${duration}s`,
-        animationDelay: `${delay}s`,
-        transformOrigin: `${x}px ${y}px`,
-      }}
-    >
-      <line
-        x1={x}
-        y1={y}
-        x2={x2}
-        y2={y2}
-        stroke={color}
-        strokeWidth={strokeWidth}
-        strokeLinecap="round"
-        opacity={0.85}
-      />
-      <path d={headPath} fill={color} opacity={0.85} />
-    </g>
-  );
-}
+/** Size index and level of the board behind the menus: a plain square 32x32 board, so dots fill behind the text. */
+const BACKDROP_SIZE = 2;
+const BACKDROP_LEVEL = 4;
+/** Seconds between one arrow leaving and the next, in solve order. */
+const GAP = 0.22;
+/** Seconds the cleared board rests before it fills again, and the fade-in time. */
+const REST = 1.4;
+const FADE = 0.7;
 
 /**
- * Flat SVG backdrop for Home and Name screens: decorative animated arrows and grid dots.
+ * The real board renderer drawn behind Home and Name, so the arrows look exactly like the game's. They leave in
+ * solve order, then the board fills again. It stands still when the player prefers reduced motion.
  */
-export function HomeBackdrop({ onReady }: Props) {
+export function HomeBackdrop({ dark = false, onReady }: Props) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const readyRef = useRef(onReady);
   useEffect(() => {
-    // Notify readiness once mounted so parent can transition smoothly.
-    onReady?.();
+    readyRef.current = onReady;
   }, [onReady]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // The backdrop is see-through, so the page colour shows between the dots.
+    const theme = {
+      ...THEME_COLORS[dark ? 'dark' : 'light'],
+      board: 'rgba(0,0,0,0)',
+    };
+    let base: Level | null = null;
+    let level: Level | null = null;
+    let order: readonly number[] = [];
+    let colors: string[] = [];
+    let width = 0;
+    let height = 0;
+    let raf = 0;
+    let started = 0;
+    let cycle = 1;
+    let cancelled = false;
+
+    /**
+     * Keeps only the whole cells on screen and the arrows that fit inside them, so no arrow head is cut by the
+     * screen edge. Then works out the order they leave in and how long the cycle takes.
+     */
+    const crop = () => {
+      if (!base) return;
+      const size = base.size;
+      const cell = Math.max(width, height) / size;
+      const halfCols = width / cell / 2;
+      const halfRows = height / cell / 2;
+      const x0 = Math.ceil(size / 2 - halfCols);
+      const x1 = Math.floor(size / 2 + halfCols);
+      const y0 = Math.ceil(size / 2 - halfRows);
+      const y1 = Math.floor(size / 2 + halfRows);
+      const inside = (x: number, y: number) =>
+        x >= x0 && x < x1 && y >= y0 && y < y1;
+      const cropped: Level = {
+        size,
+        mask: base.mask.map(
+          (on, i) => on && inside(i % size, Math.floor(i / size)),
+        ),
+        arrows: base.arrows.filter((a) =>
+          a.cells.every((c) => inside(c.x, c.y)),
+        ),
+      };
+      level = cropped;
+      order = solve(cropped) ?? [];
+      // Time for the slowest arrow to leave at the default speed.
+      const longest = Math.max(
+        0,
+        ...cropped.arrows.map((a) => finishDistance(cropped, a)),
+      );
+      let exitTime = 0;
+      while (slideDistance(exitTime) < longest && exitTime < 20)
+        exitTime += 0.05;
+      cycle = FADE + order.length * GAP + exitTime + REST;
+    };
+
+    const resize = () => {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      width = Math.max(1, Math.round(rect.width));
+      height = Math.max(1, Math.round(rect.height));
+      canvas.width = Math.round(width * dpr);
+      canvas.height = Math.round(height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      crop();
+    };
+
+    const frame = (nowMs: number) => {
+      raf = 0;
+      if (!level || cancelled) return;
+      const now = nowMs / 1000;
+      if (started === 0) started = now;
+      const t = (now - started) % cycle;
+      const cycleStart = now - t;
+
+      const slides = new Map<number, ActiveSlide>();
+      const idle = new Set<number>();
+      order.forEach((id, i) => {
+        const at = FADE + i * GAP;
+        if (still || t < at) idle.add(id);
+        else slides.set(id, { arrowId: id, t0: cycleStart + at });
+      });
+
+      const side = Math.min(width, height);
+      // Zoom so the board covers the whole screen, as a poster behind the menus.
+      const zoom = Math.max(width, height) / side;
+      ctx.clearRect(0, 0, width, height);
+      ctx.globalAlpha = still ? 1 : Math.min(1, t / FADE);
+      draw(
+        ctx,
+        {
+          level,
+          cam: { zoom, panX: 0, panY: 0 },
+          viewport: { width, height },
+          colors,
+          theme,
+          idleIds: idle,
+          slides,
+        },
+        now,
+      );
+      ctx.globalAlpha = 1;
+      if (!still && !document.hidden) raf = requestAnimationFrame(frame);
+    };
+
+    const start = () => {
+      if (!raf && level && !cancelled) raf = requestAnimationFrame(frame);
+    };
+    const onVisible = () => {
+      if (!document.hidden && !still) start();
+    };
+
+    // Let the page paint first: building the level takes a few milliseconds.
+    const build = window.setTimeout(() => {
+      base = buildLevel(BACKDROP_SIZE, BACKDROP_LEVEL);
+      colors = arrowColors(base);
+      resize();
+      start();
+      readyRef.current?.();
+    }, 0);
+
+    resize();
+    const observer = new ResizeObserver(() => {
+      resize();
+      start();
+    });
+    observer.observe(canvas);
+    document.addEventListener('visibilitychange', onVisible);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(build);
+      if (raf) cancelAnimationFrame(raf);
+      observer.disconnect();
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [dark]);
 
   return (
     <div
       aria-hidden="true"
       className="pointer-events-none absolute inset-0 overflow-hidden select-none"
     >
-      <style>{`
-        @keyframes backdropFloatH {
-          0%, 100% { transform: translateX(0); }
-          50% { transform: translateX(20px); }
-        }
-        @keyframes backdropFloatHRev {
-          0%, 100% { transform: translateX(0); }
-          50% { transform: translateX(-20px); }
-        }
-        @keyframes backdropFloatV {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(20px); }
-        }
-        @keyframes backdropFloatVRev {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-20px); }
-        }
-        .backdrop-slide-h {
-          animation: backdropFloatH ease-in-out infinite;
-        }
-        .backdrop-slide-h-rev {
-          animation: backdropFloatHRev ease-in-out infinite;
-        }
-        .backdrop-slide-v {
-          animation: backdropFloatV ease-in-out infinite;
-        }
-        .backdrop-slide-v-rev {
-          animation: backdropFloatVRev ease-in-out infinite;
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .backdrop-slide-h, .backdrop-slide-h-rev, .backdrop-slide-v, .backdrop-slide-v-rev {
-            animation: none !important;
-          }
-        }
-      `}</style>
-
-      <svg
-        className="size-full opacity-60"
-        viewBox="0 0 1000 1000"
-        preserveAspectRatio="xMidYMid slice"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <defs>
-          <pattern
-            id="home-dots-grid"
-            width="44"
-            height="44"
-            patternUnits="userSpaceOnUse"
-          >
-            <circle
-              cx="22"
-              cy="22"
-              r="1.6"
-              fill="var(--color-slate-700)"
-              opacity="0.6"
-            />
-          </pattern>
-        </defs>
-
-        <rect width="100%" height="100%" fill="url(#home-dots-grid)" />
-
-        {ARROWS.map((a) => (
-          <ArrowPath key={a.id} arrow={a} />
-        ))}
-      </svg>
+      <canvas ref={canvasRef} className="size-full opacity-80" />
     </div>
   );
 }

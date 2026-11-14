@@ -86,16 +86,11 @@
         border-radius: 24px;
         border: 1px solid var(--sp-line);
         background: var(--sp-panel);
-        box-shadow:
-          0 2px 0 var(--sp-line),
-          0 12px 26px rgb(0 0 0 / 0.35);
+        box-shadow: 0 12px 26px rgb(0 0 0 / 0.35);
       }
       #splash-board svg {
         display: block;
         width: 100%;
-      }
-      #splash-arrows {
-        filter: drop-shadow(3px 4px 0 rgb(0 0 0 / 0.3));
       }
       #splash-board circle {
         fill: var(--sp-line);
@@ -209,120 +204,293 @@
           <h1 id="splash-logo"><span>Pointscape</span></h1>
           <div id="splash-board" aria-hidden="true">
             <svg viewBox="0 0 336 224">
-              <circle cx="28" cy="28" r="2.6" />
-              <circle cx="84" cy="28" r="2.6" />
-              <circle cx="140" cy="28" r="2.6" />
-              <circle cx="196" cy="28" r="2.6" />
-              <circle cx="252" cy="28" r="2.6" />
-              <circle cx="308" cy="28" r="2.6" />
-              <circle cx="28" cy="84" r="2.6" />
-              <circle cx="84" cy="84" r="2.6" />
-              <circle cx="140" cy="84" r="2.6" />
-              <circle cx="196" cy="84" r="2.6" />
-              <circle cx="252" cy="84" r="2.6" />
-              <circle cx="308" cy="84" r="2.6" />
-              <circle cx="28" cy="140" r="2.6" />
-              <circle cx="84" cy="140" r="2.6" />
-              <circle cx="140" cy="140" r="2.6" />
-              <circle cx="196" cy="140" r="2.6" />
-              <circle cx="252" cy="140" r="2.6" />
-              <circle cx="308" cy="140" r="2.6" />
-              <circle cx="28" cy="196" r="2.6" />
-              <circle cx="84" cy="196" r="2.6" />
-              <circle cx="140" cy="196" r="2.6" />
-              <circle cx="196" cy="196" r="2.6" />
-              <circle cx="252" cy="196" r="2.6" />
-              <circle cx="308" cy="196" r="2.6" />
-              <g id="splash-arrows">
+              <circle cx="28.0" cy="28.0" r="3.9" />
+              <circle cx="84.0" cy="28.0" r="3.9" />
+              <circle cx="140.0" cy="28.0" r="3.9" />
+              <circle cx="196.0" cy="28.0" r="3.9" />
+              <circle cx="252.0" cy="28.0" r="3.9" />
+              <circle cx="308.0" cy="28.0" r="3.9" />
+              <circle cx="28.0" cy="84.0" r="3.9" />
+              <circle cx="84.0" cy="84.0" r="3.9" />
+              <circle cx="140.0" cy="84.0" r="3.9" />
+              <circle cx="196.0" cy="84.0" r="3.9" />
+              <circle cx="252.0" cy="84.0" r="3.9" />
+              <circle cx="308.0" cy="84.0" r="3.9" />
+              <circle cx="28.0" cy="140.0" r="3.9" />
+              <circle cx="84.0" cy="140.0" r="3.9" />
+              <circle cx="140.0" cy="140.0" r="3.9" />
+              <circle cx="196.0" cy="140.0" r="3.9" />
+              <circle cx="252.0" cy="140.0" r="3.9" />
+              <circle cx="308.0" cy="140.0" r="3.9" />
+              <circle cx="28.0" cy="196.0" r="3.9" />
+              <circle cx="84.0" cy="196.0" r="3.9" />
+              <circle cx="140.0" cy="196.0" r="3.9" />
+              <circle cx="196.0" cy="196.0" r="3.9" />
+              <circle cx="252.0" cy="196.0" r="3.9" />
+              <circle cx="308.0" cy="196.0" r="3.9" />
+              <g
+                id="splash-arrows"
+                fill="none"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
                 <g
                   class="sa"
                   style="--dx: 420px; --dy: 0px; animation-delay: 0s"
                 >
-                  <line
-                    x1="28"
-                    y1="28"
-                    x2="130"
-                    y2="28"
-                    stroke="#00f5d0"
-                    stroke-width="14"
-                    stroke-linecap="round"
+                  <g opacity="0.35" transform="translate(3.4 5.6)">
+                    <path
+                      d="M28 28 L84 28 L140 28"
+                      stroke="#000"
+                      stroke-width="16.8"
+                    />
+                    <polygon
+                      points="165.2,28 138.32,48.16 145.04,28 138.32,7.84"
+                      fill="#000"
+                    />
+                  </g>
+                  <path
+                    d="M28 28 L84 28 L140 28"
+                    stroke="#008772"
+                    stroke-width="16.8"
                   />
-                  <polygon points="150,28 130,41 130,15" fill="#00f5d0" />
+                  <polygon
+                    points="165.2,28 138.32,48.16 145.04,28 138.32,7.84"
+                    fill="#008772"
+                    stroke="#008772"
+                    stroke-width="2.24"
+                  />
+                  <path
+                    d="M28 28 L84 28 L140 28"
+                    stroke="#00f5d0"
+                    stroke-width="11.2"
+                  />
+                  <polygon
+                    points="165.2,28 138.32,48.16 145.04,28 138.32,7.84"
+                    fill="#00f5d0"
+                  />
+                  <path
+                    d="M28 28 L84 28 L140 28"
+                    stroke="#fff"
+                    stroke-opacity="0.55"
+                    stroke-width="2.8"
+                    transform="translate(-2.2 -2.2)"
+                  />
                 </g>
                 <g
                   class="sa"
                   style="--dx: 0px; --dy: -300px; animation-delay: 0.5s"
                 >
-                  <line
-                    x1="28"
-                    y1="196"
-                    x2="28"
-                    y2="114"
-                    stroke="#ffe600"
-                    stroke-width="14"
-                    stroke-linecap="round"
+                  <g opacity="0.35" transform="translate(3.4 5.6)">
+                    <path
+                      d="M28 196 L28 140 L28 84"
+                      stroke="#000"
+                      stroke-width="16.8"
+                    />
+                    <polygon
+                      points="28,58.8 48.16,85.68 28,78.96 7.84,85.68"
+                      fill="#000"
+                    />
+                  </g>
+                  <path
+                    d="M28 196 L28 140 L28 84"
+                    stroke="#8c7f00"
+                    stroke-width="16.8"
                   />
-                  <polygon points="28,94 41,114 15,114" fill="#ffe600" />
+                  <polygon
+                    points="28,58.8 48.16,85.68 28,78.96 7.84,85.68"
+                    fill="#8c7f00"
+                    stroke="#8c7f00"
+                    stroke-width="2.24"
+                  />
+                  <path
+                    d="M28 196 L28 140 L28 84"
+                    stroke="#ffe600"
+                    stroke-width="11.2"
+                  />
+                  <polygon
+                    points="28,58.8 48.16,85.68 28,78.96 7.84,85.68"
+                    fill="#ffe600"
+                  />
+                  <path
+                    d="M28 196 L28 140 L28 84"
+                    stroke="#fff"
+                    stroke-opacity="0.55"
+                    stroke-width="2.8"
+                    transform="translate(-2.2 -2.2)"
+                  />
                 </g>
                 <g
                   class="sa"
                   style="--dx: 0px; --dy: -300px; animation-delay: 1s"
                 >
-                  <line
-                    x1="140"
-                    y1="164"
-                    x2="140"
-                    y2="96"
+                  <g opacity="0.35" transform="translate(3.4 5.6)">
+                    <path
+                      d="M140 196 L140 140 L140 84"
+                      stroke="#000"
+                      stroke-width="16.8"
+                    />
+                    <polygon
+                      points="140,58.8 160.16,85.68 140,78.96 119.84,85.68"
+                      fill="#000"
+                    />
+                  </g>
+                  <path
+                    d="M140 196 L140 140 L140 84"
+                    stroke="#8c4c00"
+                    stroke-width="16.8"
+                  />
+                  <polygon
+                    points="140,58.8 160.16,85.68 140,78.96 119.84,85.68"
+                    fill="#8c4c00"
+                    stroke="#8c4c00"
+                    stroke-width="2.24"
+                  />
+                  <path
+                    d="M140 196 L140 140 L140 84"
                     stroke="#ff8a00"
-                    stroke-width="14"
-                    stroke-linecap="round"
+                    stroke-width="11.2"
                   />
-                  <polygon points="140,76 153,96 127,96" fill="#ff8a00" />
+                  <polygon
+                    points="140,58.8 160.16,85.68 140,78.96 119.84,85.68"
+                    fill="#ff8a00"
+                  />
+                  <path
+                    d="M140 196 L140 140 L140 84"
+                    stroke="#fff"
+                    stroke-opacity="0.55"
+                    stroke-width="2.8"
+                    transform="translate(-2.2 -2.2)"
+                  />
                 </g>
                 <g
                   class="sa"
-                  style="--dx: -420px; --dy: 0px; animation-delay: 1.5s"
+                  style="--dx: 0px; --dy: -300px; animation-delay: 1.5s"
                 >
-                  <line
-                    x1="308"
-                    y1="84"
-                    x2="210"
-                    y2="84"
-                    stroke="#ff2bd6"
-                    stroke-width="14"
-                    stroke-linecap="round"
+                  <g opacity="0.35" transform="translate(3.4 5.6)">
+                    <path
+                      d="M84 196 L84 140 L84 84"
+                      stroke="#000"
+                      stroke-width="16.8"
+                    />
+                    <polygon
+                      points="84,58.8 104.16,85.68 84,78.96 63.84,85.68"
+                      fill="#000"
+                    />
+                  </g>
+                  <path
+                    d="M84 196 L84 140 L84 84"
+                    stroke="#323b8c"
+                    stroke-width="16.8"
                   />
-                  <polygon points="190,84 210,71 210,97" fill="#ff2bd6" />
-                </g>
-                <g
-                  class="sa"
-                  style="--dx: 0px; --dy: -300px; animation-delay: 2s"
-                >
-                  <line
-                    x1="308"
-                    y1="196"
-                    x2="308"
-                    y2="154"
-                    stroke="#00f5d0"
-                    stroke-width="14"
-                    stroke-linecap="round"
+                  <polygon
+                    points="84,58.8 104.16,85.68 84,78.96 63.84,85.68"
+                    fill="#323b8c"
+                    stroke="#323b8c"
+                    stroke-width="2.24"
                   />
-                  <polygon points="308,134 321,154 295,154" fill="#00f5d0" />
-                </g>
-                <g
-                  class="sa"
-                  style="--dx: 420px; --dy: 0px; animation-delay: 2.5s"
-                >
-                  <line
-                    x1="84"
-                    y1="196"
-                    x2="204"
-                    y2="196"
+                  <path
+                    d="M84 196 L84 140 L84 84"
                     stroke="#5b6bff"
-                    stroke-width="14"
-                    stroke-linecap="round"
+                    stroke-width="11.2"
                   />
-                  <polygon points="224,196 204,209 204,183" fill="#5b6bff" />
+                  <polygon
+                    points="84,58.8 104.16,85.68 84,78.96 63.84,85.68"
+                    fill="#5b6bff"
+                  />
+                  <path
+                    d="M84 196 L84 140 L84 84"
+                    stroke="#fff"
+                    stroke-opacity="0.55"
+                    stroke-width="2.8"
+                    transform="translate(-2.2 -2.2)"
+                  />
+                </g>
+                <g
+                  class="sa"
+                  style="--dx: -420px; --dy: 0px; animation-delay: 2s"
+                >
+                  <g opacity="0.35" transform="translate(3.4 5.6)">
+                    <path
+                      d="M308 84 L252 84 L196 84"
+                      stroke="#000"
+                      stroke-width="16.8"
+                    />
+                    <polygon
+                      points="170.8,84 197.68,63.84 190.96,84 197.68,104.16"
+                      fill="#000"
+                    />
+                  </g>
+                  <path
+                    d="M308 84 L252 84 L196 84"
+                    stroke="#8c1876"
+                    stroke-width="16.8"
+                  />
+                  <polygon
+                    points="170.8,84 197.68,63.84 190.96,84 197.68,104.16"
+                    fill="#8c1876"
+                    stroke="#8c1876"
+                    stroke-width="2.24"
+                  />
+                  <path
+                    d="M308 84 L252 84 L196 84"
+                    stroke="#ff2bd6"
+                    stroke-width="11.2"
+                  />
+                  <polygon
+                    points="170.8,84 197.68,63.84 190.96,84 197.68,104.16"
+                    fill="#ff2bd6"
+                  />
+                  <path
+                    d="M308 84 L252 84 L196 84"
+                    stroke="#fff"
+                    stroke-opacity="0.55"
+                    stroke-width="2.8"
+                    transform="translate(-2.2 -2.2)"
+                  />
+                </g>
+                <g
+                  class="sa"
+                  style="--dx: 0px; --dy: -300px; animation-delay: 2.5s"
+                >
+                  <g opacity="0.35" transform="translate(3.4 5.6)">
+                    <path
+                      d="M252 196 L308 196 L308 140"
+                      stroke="#000"
+                      stroke-width="16.8"
+                    />
+                    <polygon
+                      points="308,114.8 328.16,141.68 308,134.96 287.84,141.68"
+                      fill="#000"
+                    />
+                  </g>
+                  <path
+                    d="M252 196 L308 196 L308 140"
+                    stroke="#008772"
+                    stroke-width="16.8"
+                  />
+                  <polygon
+                    points="308,114.8 328.16,141.68 308,134.96 287.84,141.68"
+                    fill="#008772"
+                    stroke="#008772"
+                    stroke-width="2.24"
+                  />
+                  <path
+                    d="M252 196 L308 196 L308 140"
+                    stroke="#00f5d0"
+                    stroke-width="11.2"
+                  />
+                  <polygon
+                    points="308,114.8 328.16,141.68 308,134.96 287.84,141.68"
+                    fill="#00f5d0"
+                  />
+                  <path
+                    d="M252 196 L308 196 L308 140"
+                    stroke="#fff"
+                    stroke-opacity="0.55"
+                    stroke-width="2.8"
+                    transform="translate(-2.2 -2.2)"
+                  />
                 </g>
               </g>
             </svg>

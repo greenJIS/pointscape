@@ -1,6 +1,8 @@
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useEffect, useState } from 'react';
 import { POOL } from '../view/palette';
 import { Logo } from './Logo';
+import { MiniBoard } from './MiniBoard';
+import { miniScene } from './miniScene';
 
 interface Props {
   readonly label?: string;
@@ -10,10 +12,6 @@ interface Props {
   readonly overlay?: boolean;
 }
 
-const CELL = 56;
-const COLS = 6;
-const ROWS = 4;
-const HEAD = 20;
 const TIPS: readonly string[] = [
   'Look in front of the arrow head. If nothing is in the way, tap it.',
   'A blocked tap costs a heart, once per arrow.',
@@ -24,121 +22,79 @@ const TIPS: readonly string[] = [
 ];
 const TIP_MS = 3500;
 
-interface Mover {
-  readonly color: string;
-  /** Tail and tip, in board units. The line is drawn from the tail to the head base. */
-  readonly from: readonly [number, number];
-  readonly to: readonly [number, number];
-  /** How far it slides to leave the board. */
-  readonly out: readonly [number, number];
-}
+const ORANGE = POOL[0] ?? '#ff8a00';
+const YELLOW = POOL[1] ?? '#ffe600';
+const TEAL = POOL[2] ?? '#00f5d0';
+const INDIGO = POOL[3] ?? '#5b6bff';
+const MAGENTA = POOL[4] ?? '#ff2bd6';
 
-const centre = (n: number): number => CELL / 2 + CELL * n;
-/** Listed in exit order: each arrow leaves a clear path for the next one, as in the game. */
-const MOVERS: readonly Mover[] = [
+/** Listed so that each arrow leaves a clear path for the next one, as in the game. Ids follow this order. */
+const SCENE = miniScene(6, 4, [
   {
-    color: POOL[2] ?? '#fff',
-    from: [centre(0), centre(0)],
-    to: [centre(2) + 10, centre(0)],
-    out: [420, 0],
+    cells: [
+      [0, 0],
+      [1, 0],
+      [2, 0],
+    ],
+    dir: [1, 0],
+    color: TEAL,
   },
   {
-    color: POOL[1] ?? '#fff',
-    from: [centre(0), centre(3)],
-    to: [centre(0), centre(1) + 10],
-    out: [0, -300],
+    cells: [
+      [0, 3],
+      [0, 2],
+      [0, 1],
+    ],
+    dir: [0, -1],
+    color: YELLOW,
   },
   {
-    color: POOL[0] ?? '#fff',
-    from: [centre(2), centre(2) + 24],
-    to: [centre(2), centre(1) - 8],
-    out: [0, -300],
+    cells: [
+      [2, 3],
+      [2, 2],
+      [2, 1],
+    ],
+    dir: [0, -1],
+    color: ORANGE,
   },
   {
-    color: POOL[4] ?? '#fff',
-    from: [centre(5), centre(1)],
-    to: [centre(3) - 6, centre(1)],
-    out: [-420, 0],
+    cells: [
+      [1, 3],
+      [1, 2],
+      [1, 1],
+    ],
+    dir: [0, -1],
+    color: INDIGO,
   },
   {
-    color: POOL[2] ?? '#fff',
-    from: [centre(5), centre(3)],
-    to: [centre(5), centre(2) - 6],
-    out: [0, -300],
+    cells: [
+      [5, 1],
+      [4, 1],
+      [3, 1],
+    ],
+    dir: [-1, 0],
+    color: MAGENTA,
   },
   {
-    color: POOL[3] ?? '#fff',
-    from: [centre(1), centre(3)],
-    to: [centre(3) + 28, centre(3)],
-    out: [420, 0],
+    cells: [
+      [4, 3],
+      [5, 3],
+      [5, 2],
+    ],
+    dir: [0, -1],
+    color: TEAL,
   },
-];
+]);
+const ORDER: readonly number[] = [0, 1, 2, 3, 4, 5];
 
-interface Drawn {
-  readonly color: string;
-  readonly line: readonly [number, number, number, number];
-  readonly head: string;
-  readonly style: CSSProperties;
-}
-
-/** Each arrow as a round line with a barbed head, like the ones on the board. Worked out once. */
-const DRAWN: readonly Drawn[] = MOVERS.map((m, i) => {
-  const [x1, y1] = m.from;
-  const [x2, y2] = m.to;
-  const len = Math.hypot(x2 - x1, y2 - y1);
-  const ux = (x2 - x1) / len;
-  const uy = (y2 - y1) / len;
-  const bx = x2 - ux * HEAD;
-  const by = y2 - uy * HEAD;
-  return {
-    color: m.color,
-    line: [x1, y1, bx, by],
-    head: `${x2},${y2} ${bx - uy * 13},${by + ux * 13} ${bx + uy * 13},${by - ux * 13}`,
-    style: {
-      ['--dx' as string]: `${m.out[0]}px`,
-      ['--dy' as string]: `${m.out[1]}px`,
-      animationDelay: `${i * 0.5}s`,
-    },
-  };
-});
-
-/** The small board: dots, and arrows that slide away and come back. */
+/** The small board: the real renderer, with arrows that slide away and come back. */
 function Board() {
   return (
     <div
       aria-hidden="true"
-      className="w-full max-w-84 overflow-hidden rounded-3xl border border-slate-600 bg-slate-800 shadow-[0_2px_0_var(--color-slate-600),0_12px_26px_color-mix(in_srgb,var(--color-shade)_35%,transparent)]"
+      className="w-full max-w-84 overflow-hidden rounded-3xl border border-slate-600 shadow-[0_12px_26px_color-mix(in_srgb,var(--color-shade)_35%,transparent)]"
     >
-      <svg
-        viewBox={`0 0 ${CELL * COLS} ${CELL * ROWS}`}
-        className="block w-full"
-      >
-        {Array.from({ length: COLS * ROWS }, (_, i) => (
-          <circle
-            key={i}
-            cx={centre(i % COLS)}
-            cy={centre(Math.floor(i / COLS))}
-            r={2.6}
-            className="fill-slate-600"
-          />
-        ))}
-        <g className="drop-shadow-[3px_4px_0_color-mix(in_srgb,var(--color-shade)_30%,transparent)]">
-          {DRAWN.map((d, i) => (
-            <g key={i} className="load-arrow" style={d.style}>
-              <line
-                x1={d.line[0]}
-                y1={d.line[1]}
-                x2={d.line[2]}
-                y2={d.line[3]}
-                stroke={d.color}
-                strokeWidth={14}
-                strokeLinecap="round"
-              />
-              <polygon points={d.head} fill={d.color} />
-            </g>
-          ))}
-        </g>
-      </svg>
+      <MiniBoard scene={SCENE} order={ORDER} loop />
     </div>
   );
 }

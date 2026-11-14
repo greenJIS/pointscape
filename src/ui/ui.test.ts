@@ -167,12 +167,11 @@ describe('ErrorBoundary', () => {
 });
 
 describe('HomeBackdrop & Stage', () => {
-  it('renders svg backdrop without extra canvas elements', () => {
+  it('renders a canvas backdrop that uses the game renderer', () => {
     const onReady = vi.fn();
     const html = renderToString(React.createElement(HomeBackdrop, { onReady }));
-    expect(html).toContain('<svg');
-    expect(html).toContain('home-dots-grid');
-    expect(html).not.toContain('canvas');
+    expect(html).toContain('<canvas');
+    expect(html).not.toContain('<svg');
     expect(html).not.toContain(['3', 'D'].join(''));
   });
 
@@ -355,15 +354,15 @@ describe('GameScreen', () => {
     expect(html).toContain('Level 1 · 8×8');
 
     // Shows hearts (3 lives for tiny)
-    expect(html).toContain('❤️❤️❤️');
+    expect(html).toContain('3 lives left');
 
     // Shows arrows left
     expect(html).toContain('Arrows left');
     expect(html).toContain('2');
 
     // Shows hint and restart buttons
-    expect(html).toContain('💡 3');
-    expect(html).toContain('↻ Restart');
+    expect(html).toContain('</svg>3</button>');
+    expect(html).toContain('Restart</button>');
 
     // Shows tip
     expect(html).toContain(

@@ -1,88 +1,69 @@
 import type { ReactNode } from 'react';
 import { POOL } from '../view/palette';
+import { MiniBoard } from './MiniBoard';
+import { miniScene, previewOf, type MiniArrow } from './miniScene';
 import { Page } from './Page';
 
 interface Props {
   readonly onBack: () => void;
 }
 
-const DOT = 'fill-slate-600';
+const PICTURE = 'rounded-xl';
 
-/** One arrow as a line with a small head, in board cells (4 wide, 2 high). */
-function Arrow({
-  x,
-  y,
-  length,
+const ORANGE = POOL[0] ?? '#ff8a00';
+const YELLOW = POOL[1] ?? '#ffe600';
+const TEAL = POOL[2] ?? '#00f5d0';
+const INDIGO = POOL[3] ?? '#5b6bff';
+const MAGENTA = POOL[4] ?? '#ff2bd6';
+
+/** A row of three cells that points right, starting at column `x`. */
+const right = (x: number, y: number, color: string): MiniArrow => ({
+  cells: [
+    [x, y],
+    [x + 1, y],
+    [x + 2, y],
+  ],
+  dir: [1, 0],
   color,
-}: {
-  readonly x: number;
-  readonly y: number;
-  readonly length: number;
-  readonly color: string;
-}) {
-  const tip = x + length;
-  return (
-    <g>
-      <line
-        x1={x}
-        y1={y}
-        x2={tip - 0.2}
-        y2={y}
-        stroke={color}
-        strokeWidth={0.3}
-        strokeLinecap="round"
-      />
-      <polygon
-        points={`${tip + 0.3},${y} ${tip - 0.15},${y - 0.3} ${tip - 0.15},${y + 0.3}`}
-        fill={color}
-      />
-    </g>
-  );
-}
+});
 
-function Mini({ children }: { readonly children: ReactNode }) {
-  return (
-    <svg
-      viewBox="-0.2 -0.2 5.4 3.4"
-      aria-hidden="true"
-      className="w-full rounded-xl bg-slate-950"
-    >
-      {Array.from({ length: 12 }, (_, i) => (
-        <circle
-          key={i}
-          cx={(i % 4) * 1.3 + 0.5}
-          cy={Math.floor(i / 4) * 1.3 + 0.3}
-          r={0.06}
-          className={DOT}
-        />
-      ))}
-      {children}
-    </svg>
-  );
-}
+/** A row of three cells that points left, with its tail at column `x`. */
+const left = (x: number, y: number, color: string): MiniArrow => ({
+  cells: [
+    [x, y],
+    [x - 1, y],
+    [x - 2, y],
+  ],
+  dir: [-1, 0],
+  color,
+});
 
-function Ray({
-  from,
-  to,
-  className,
-}: {
-  readonly from: number;
-  readonly to: number;
-  /** A `stroke-*` colour class from the scheme in index.css. */
-  readonly className: string;
-}) {
-  return (
-    <line
-      x1={from}
-      y1={1.6}
-      x2={to}
-      y2={1.6}
-      className={className}
-      strokeWidth={0.12}
-      strokeDasharray="0.25 0.2"
-    />
-  );
-}
+const CLEAR = miniScene(5, 3, [
+  right(0, 1, TEAL),
+  right(0, 0, INDIGO),
+  left(4, 2, YELLOW),
+]);
+const BLOCKED = miniScene(5, 3, [
+  right(0, 1, ORANGE),
+  {
+    cells: [
+      [4, 2],
+      [4, 1],
+      [4, 0],
+    ],
+    dir: [0, -1],
+    color: MAGENTA,
+  },
+]);
+const BOARD = miniScene(5, 3, [
+  right(0, 0, TEAL),
+  right(1, 1, ORANGE),
+  left(4, 2, YELLOW),
+]);
+const BOARD_ORDER: readonly number[] = [0, 1, 2];
+/** The green and red dashed lines the game draws when you hold an arrow. */
+const OK_PATH = previewOf(0, false, 3);
+const BAD_PATH = previewOf(0, true, 1.5);
 
 const CARDS: readonly {
   readonly title: string;
@@ -92,38 +73,20 @@ const CARDS: readonly {
   {
     title: 'Find a clear path',
     text: 'Look in front of the arrow head. If nothing is in the way, tap it and it slides out.',
-    picture: (
-      <Mini>
-        <Arrow x={0.4} y={1.6} length={2} color={POOL[2] ?? '#00f5d0'} />
-        <Ray from={2.9} to={5} className="stroke-ok" />
-      </Mini>
-    ),
+    picture: <MiniBoard scene={CLEAR} preview={OK_PATH} className={PICTURE} />,
   },
   {
     title: 'Avoid blockers',
     text: 'Another arrow in the way stops it. A blocked tap costs a heart, once per arrow.',
     picture: (
-      <Mini>
-        <Arrow x={0.4} y={1.6} length={1.6} color={POOL[0] ?? '#ff8a00'} />
-        <Ray from={2.6} to={3.2} className="stroke-bad" />
-        <rect
-          x={3.2}
-          y={1.2}
-          width={0.5}
-          height={0.8}
-          rx={0.15}
-          fill={POOL[4] ?? '#ff2bd6'}
-        />
-      </Mini>
+      <MiniBoard scene={BLOCKED} preview={BAD_PATH} className={PICTURE} />
     ),
   },
   {
     title: 'Clear the board',
     text: 'Remove every arrow before you run out of hearts. Bigger boards give you more.',
     picture: (
-      <Mini>
-        <Arrow x={1.6} y={1.6} length={1.4} color={POOL[1] ?? '#ffe600'} />
-      </Mini>
+      <MiniBoard scene={BOARD} order={BOARD_ORDER} loop className={PICTURE} />
     ),
   },
 ];
@@ -148,9 +111,13 @@ export function HowToPlayScreen({ onBack }: Props) {
           </section>
         ))}
       </div>
-      <ul className="list-disc rounded-3xl py-4 pr-4 pl-8 text-sm hud-card">
+      <ul className="rounded-3xl p-4 text-sm hud-card">
         {TIPS.map((t) => (
-          <li key={t} className="py-0.5">
+          <li key={t} className="flex items-start gap-3 py-1">
+            <span
+              aria-hidden="true"
+              className="mt-1.5 size-2 shrink-0 rounded-full bg-teal-300"
+            />
             {t}
           </li>
         ))}

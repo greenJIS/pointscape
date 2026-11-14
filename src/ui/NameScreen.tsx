@@ -21,9 +21,14 @@ export function NameScreen({ dark, onDone }: Props) {
             onDone(text);
           }}
         >
-          <p className="text-lg font-semibold text-slate-400">Welcome to</p>
+          <p className="rounded-full px-4 py-1 text-lg font-semibold hud-card">
+            Welcome to
+          </p>
           <Logo className="mt-1 text-4xl sm:text-5xl" />
-          <label htmlFor="name" className="mt-6 font-semibold text-slate-400">
+          <label
+            htmlFor="name"
+            className="mt-6 rounded-full px-4 py-1 font-semibold hud-card"
+          >
             What&apos;s your name?
           </label>
           <input
@@ -35,13 +40,13 @@ export function NameScreen({ dark, onDone }: Props) {
             placeholder="Your name"
             className="mt-2 w-full rounded-2xl px-4 py-3 text-center text-lg font-semibold hud-card outline-none focus:border-teal-300"
           />
-          <p className="mt-2 text-xs text-slate-400">
+          <p className="mt-2 rounded-xl px-3 py-1.5 text-xs hud-card">
             Up to {MAX_NAME_LENGTH} characters. Saved on this device only.
             Change it any time in Settings.
           </p>
           <button
             type="submit"
-            className="mt-5 w-full rounded-3xl bg-linear-to-b from-teal-200 to-teal-300 py-4 text-xl font-black text-ink shadow-[inset_0_3px_0_color-mix(in_srgb,var(--color-glint)_70%,transparent),0_7px_0_var(--color-teal-700),0_14px_24px_color-mix(in_srgb,var(--color-shade)_35%,transparent)] active:translate-y-1 active:shadow-[inset_0_3px_0_color-mix(in_srgb,var(--color-glint)_70%,transparent),0_2px_0_var(--color-teal-700)]"
+            className="mt-5 w-full rounded-3xl bg-teal-300 py-4 text-xl font-black text-ink shadow-[0_3px_0_var(--color-teal-700)] active:scale-97"
           >
             Continue
           </button>

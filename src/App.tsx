@@ -263,14 +263,14 @@ export default function App() {
         )}
         {helpOpen && <HowToPlayScreen onBack={() => setHelpOpen(false)} />}
         {unlockAll && (
-          <span className="fixed top-2 left-1/2 z-40 -translate-x-1/2 rounded-full bg-amber-400 px-3 py-0.5 text-xs font-bold text-ink">
+          <span className="pointer-events-none fixed inset-x-0 top-0 z-40 mx-auto w-fit rounded-b-md bg-amber-400 px-2 py-0.5 text-[10px] leading-none font-bold text-ink opacity-90">
             DEV: all unlocked
           </span>
         )}
         {toast !== null && (
           <div
             role="status"
-            className="pointer-events-none fixed bottom-20 left-1/2 z-40 -translate-x-1/2 rounded-full bg-teal-300 px-4 py-2 text-sm font-semibold text-ink shadow-lg"
+            className="pointer-events-none fixed inset-x-0 bottom-[max(5rem,calc(env(safe-area-inset-bottom)+3.5rem))] z-40 mx-auto w-fit max-w-[90vw] rounded-full px-5 py-2.5 text-center text-sm font-semibold hud-card"
           >
             {toast}
           </div>

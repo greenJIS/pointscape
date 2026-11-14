@@ -22,12 +22,21 @@ import {
   type ThemeMode,
 } from '../game/settings';
 import { BoardCanvas, type BoardCanvasHandle } from '../view/BoardCanvas';
+import type { Insets } from '../view/camera';
 import { ANIM, finishDistance, slideDistance } from '../view/motion';
 import { arrowColors } from '../view/palette';
 import { playSound } from '../view/sound';
 import { accentFor } from './accents';
 import { CoachMark } from './CoachMark';
-import { PauseIcon } from './icons';
+import {
+  Bulb,
+  Check,
+  Heart,
+  HeartBroken,
+  PauseIcon,
+  Restart,
+  Target,
+} from './icons';
 import { Modal, ModalButton } from './Modal';
 
 export interface GameScreenProps {
@@ -81,6 +90,28 @@ function slideSeconds(
   return t;
 }
 
+/** Tailwind's `sm` breakpoint, in px. */
+const SM = 640;
+
+/**
+ * Space the HUD takes at the top and bottom of the screen, so the fitted board sits between the
+ * rows. `coach` adds the tip card that docks above the bottom buttons. `safe` is the device
+ * safe area measured from CSS env().
+ */
+function hudInset(width: number, coach: boolean, safe: Insets): Insets {
+  const wide = width >= SM;
+  const top = wide ? 84 : 120;
+  const bottom = wide ? (coach ? 190 : 96) : coach ? 232 : 80;
+  return {
+    top: top + safe.top,
+    bottom: bottom + safe.bottom,
+    left: safe.left,
+    right: safe.right,
+  };
+}
+
+const NO_SAFE: Insets = { top: 0, right: 0, bottom: 0, left: 0 };
+
 export function GameScreen({
   board,
   difficulty,
@@ -118,9 +149,42 @@ export function GameScreen({
   const [winShown, setWinShown] = useState(false);
   const [loseShown, setLoseShown] = useState(false);
   const [paused, setPaused] = useState(false);
+  const [confirmRestart, setConfirmRestart] = useState(false);
   const [resetCount, setResetCount] = useState(0);
   const [result, setResult] = useState<ClearResult | null>(null);
   const reported = useRef(false);
+  const probeRef = useRef<HTMLDivElement>(null);
+  const [screenWidth, setScreenWidth] = useState(() =>
+    typeof window === 'undefined' ? SM : window.innerWidth,
+  );
+  const [safe, setSafe] = useState<Insets>(NO_SAFE);
+
+  // Window width picks the HUD layout; the probe reads the device safe area from CSS env().
+  useEffect(() => {
+    const measure = () => {
+      setScreenWidth(window.innerWidth);
+      const probe = probeRef.current;
+      if (!probe) return;
+      const cs = getComputedStyle(probe);
+      const next: Insets = {
+        top: parseFloat(cs.paddingTop) || 0,
+        right: parseFloat(cs.paddingRight) || 0,
+        bottom: parseFloat(cs.paddingBottom) || 0,
+        left: parseFloat(cs.paddingLeft) || 0,
+      };
+      setSafe((prev) =>
+        prev.top === next.top &&
+        prev.right === next.right &&
+        prev.bottom === next.bottom &&
+        prev.left === next.left
+          ? prev
+          : next,
+      );
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, []);
 
   // Latest session, readable by a tap that lands before React re-renders.
   const live = useRef(session);
@@ -239,6 +303,7 @@ export function GameScreen({
     setWinShown(false);
     setLoseShown(false);
     setPaused(false);
+    setConfirmRestart(false);
     setHintId(null);
     const fresh = restart(live.current);
     live.current = fresh;
@@ -257,10 +322,20 @@ export function GameScreen({
       return DIFFICULTIES[idx]?.name ?? `Size ${idx}`;
     });
   }, [pendingDifficulties, pendingTracks]);
+  const coachOn = showCoach && session.status === 'playing';
+  const inset = useMemo(
+    () => hudInset(screenWidth, coachOn, safe),
+    [screenWidth, coachOn, safe],
+  );
   const clearedCountVal = clearedInDifficulty ?? clearedInTrack ?? 0;
 
   return (
     <main className="relative h-dvh overflow-hidden">
+      <div
+        ref={probeRef}
+        aria-hidden="true"
+        className="pointer-events-none invisible absolute size-0 pt-[env(safe-area-inset-top)] pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)]"
+      />
       <div className="absolute inset-0">
         <BoardCanvas
           key={`${difficulty}:${level}:${resetCount}`}
@@ -273,6 +348,7 @@ export function GameScreen({
           speedRate={slideRate}
           hintId={hintId}
           isWon={session.status === 'won'}
+          inset={inset}
           onTap={onTap}
           onBlocked={onBlocked}
         />
@@ -283,10 +359,10 @@ export function GameScreen({
           ? 'Level cleared'
           : session.status === 'lost'
             ? 'Out of hearts'
-            : `${left} arrows left, ${session.lives} hearts`}
+            : `${left} arrows left, ${session.lives} ${session.lives === 1 ? 'heart' : 'hearts'}`}
       </p>
 
-      <div className="pointer-events-none absolute inset-0 p-3 *:pointer-events-auto sm:p-5">
+      <div className="pointer-events-none absolute inset-0 top-[env(safe-area-inset-top)] right-[env(safe-area-inset-right)] bottom-[env(safe-area-inset-bottom)] left-[env(safe-area-inset-left)] *:pointer-events-auto">
         <div className="absolute top-3 left-3 flex items-center gap-2 sm:top-5 sm:left-5">
           <button
             type="button"
@@ -307,10 +383,15 @@ export function GameScreen({
         <span
           role="img"
           aria-label={`${session.lives} lives left`}
-          className="absolute top-18 left-3 rounded-full px-3 py-1.5 text-lg tracking-tight hud-card sm:top-5 sm:left-1/2 sm:-translate-x-1/2 sm:text-2xl"
+          className="absolute top-18 left-3 flex items-center gap-1 rounded-full px-3 py-2 hud-card sm:top-5 sm:left-1/2 sm:-translate-x-1/2"
         >
-          {'❤️'.repeat(session.lives)}
-          {'🤍'.repeat(session.maxLives - session.lives)}
+          {Array.from({ length: session.maxLives }, (_, i) => (
+            <Heart
+              key={i}
+              filled={i < session.lives}
+              className="size-6 sm:size-7"
+            />
+          ))}
         </span>
 
         <div className="absolute top-3 right-3 flex flex-col items-end gap-2 sm:top-5 sm:right-5">
@@ -340,9 +421,9 @@ export function GameScreen({
             onClick={() => boardCanvasRef.current?.resetView()}
             aria-label="Reset view"
             title="Reset view"
-            className="grid size-11 place-items-center rounded-full border border-teal-200/60 bg-linear-to-b from-teal-200 to-teal-500 text-xl font-bold text-slate-900 shadow-[inset_0_2px_0_color-mix(in_srgb,var(--color-glint)_70%,transparent),0_5px_0_var(--color-teal-700),0_8px_12px_color-mix(in_srgb,var(--color-shade)_50%,transparent)] enabled:hover:brightness-110 enabled:active:translate-y-1 enabled:active:shadow-[inset_0_2px_0_color-mix(in_srgb,var(--color-glint)_70%,transparent),0_1px_0_var(--color-teal-700),0_2px_4px_color-mix(in_srgb,var(--color-shade)_50%,transparent)]"
+            className="grid size-11 place-items-center rounded-full hud-card"
           >
-            ⌖
+            <Target />
           </button>
         </div>
 
@@ -352,21 +433,25 @@ export function GameScreen({
           aria-disabled={hints <= 0}
           className={`absolute bottom-3 left-3 flex h-12 items-center justify-center gap-2 rounded-full px-4 font-semibold hud-card sm:bottom-5 sm:left-5 ${hints <= 0 ? 'opacity-40' : ''}`}
         >
-          {`💡 ${hints}`}
+          <Bulb />
+          {hints}
         </button>
 
-        <p className="absolute bottom-3 left-1/2 hidden w-[min(22rem,calc(100%-14rem))] -translate-x-1/2 rounded-2xl px-3 py-2 text-center text-xs hud-card sm:bottom-5 sm:text-sm sm:[@media(min-height:720px)]:block">
-          <b>Tip</b> · Hold an arrow to preview its path without risking a
-          heart.
-        </p>
+        {!coachOn && (
+          <p className="absolute bottom-3 left-1/2 hidden w-[min(22rem,calc(100%-14rem))] -translate-x-1/2 rounded-2xl px-3 py-2 text-center text-xs hud-card sm:bottom-5 sm:text-sm sm:[@media(min-height:720px)]:block">
+            <b>Tip</b> · Hold an arrow to preview its path without risking a
+            heart.
+          </p>
+        )}
 
         <div className="absolute right-3 bottom-3 flex flex-col items-end gap-2 sm:right-5 sm:bottom-5">
           <button
             type="button"
-            onClick={onRestart}
-            className="h-12 rounded-full px-4 text-sm font-semibold hud-card"
+            onClick={() => setConfirmRestart(true)}
+            className="flex h-12 items-center gap-2 rounded-full px-4 text-sm font-semibold hud-card"
           >
-            ↻ Restart
+            <Restart className="size-4" />
+            Restart
           </button>
         </div>
       </div>
@@ -384,7 +469,13 @@ export function GameScreen({
               primary
               onClick={() => setPaused(false)}
             />
-            <ModalButton label="Restart level" onClick={onRestart} />
+            <ModalButton
+              label="Restart level"
+              onClick={() => {
+                setPaused(false);
+                setConfirmRestart(true);
+              }}
+            />
             <ModalButton label="Levels" onClick={handleLevels} />
             <ModalButton
               label="How to play"
@@ -405,17 +496,34 @@ export function GameScreen({
         </Modal>
       )}
 
+      {confirmRestart && session.status === 'playing' && (
+        <Modal onClose={() => setConfirmRestart(false)}>
+          <h2 className="text-2xl font-bold text-strong">Restart level?</h2>
+          <p className="mt-2 text-slate-300">
+            Your progress on this board and your hearts will be reset.
+          </p>
+          <div className="mt-5 flex flex-col gap-2">
+            <ModalButton
+              label="Keep playing"
+              primary
+              onClick={() => setConfirmRestart(false)}
+            />
+            <ModalButton label="Restart" danger onClick={onRestart} />
+          </div>
+        </Modal>
+      )}
+
       {session.status === 'won' && result && winShown && (
         <Modal>
           <div
-            className={`mx-auto mb-2 grid size-16 place-items-center rounded-full text-3xl text-ink ${accent.bg}`}
+            className={`mx-auto mb-3 grid size-20 place-items-center rounded-full text-ink ${accent.bg}`}
           >
-            ✓
+            <Check className="size-11" />
           </div>
-          <h2 className="text-2xl font-bold text-strong">
+          <h2 className="text-4xl font-extrabold text-strong">
             Cleared{name ? `, ${name}` : ''}!
           </h2>
-          <p className="mt-1 text-sm text-slate-400">
+          <p className="mt-1 text-base font-semibold text-strong">
             {spec?.name ?? 'Level'} · {level}
           </p>
           {result.hintGifted && (
@@ -432,7 +540,7 @@ export function GameScreen({
             </p>
           ) : (
             pendingNames.length > 0 && (
-              <p className="mt-3 text-xs text-slate-400">
+              <p className="mt-3 text-base font-semibold text-strong">
                 {Math.min(clearedCountVal, UNLOCK_AFTER)} / {UNLOCK_AFTER} to
                 unlock {pendingNames.join(' and ')}
               </p>
@@ -454,9 +562,9 @@ export function GameScreen({
 
       {session.status === 'lost' && loseShown && (
         <Modal>
-          <div className="text-5xl">💔</div>
+          <HeartBroken className="mx-auto size-16" />
           <h2 className="mt-2 text-2xl font-bold text-strong">Out of hearts</h2>
-          <p className="mt-1 text-sm text-slate-400">
+          <p className="mt-2 text-base text-strong">
             Look for arrows with a clear path first.
           </p>
           <div className="mt-5 flex flex-col gap-2">

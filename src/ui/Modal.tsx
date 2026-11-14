@@ -17,7 +17,7 @@ export function Modal({ children, onClose }: Props) {
         role="dialog"
         aria-modal="true"
         tabIndex={-1}
-        className="w-full max-w-sm rounded-3xl border border-slate-700 bg-slate-900 p-6 text-center shadow-2xl"
+        className="w-full max-w-sm rounded-3xl border border-slate-700 bg-slate-900 p-6 text-center shadow-xl"
       >
         {children}
       </div>
@@ -34,15 +34,15 @@ interface ButtonProps {
 
 export function ModalButton({ label, onClick, primary, danger }: ButtonProps) {
   const tone = primary
-    ? 'bg-teal-300 text-ink'
+    ? 'bg-teal-300 text-ink shadow-[0_3px_0_var(--color-teal-700)]'
     : danger
-      ? 'bg-red-400 text-ink'
-      : 'bg-slate-800 text-strong';
+      ? 'bg-red-400 text-ink shadow-[0_3px_0_var(--color-danger-edge)]'
+      : 'border border-slate-700 bg-slate-800 text-strong';
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`w-full rounded-2xl py-3 font-bold active:scale-[0.97] ${tone}`}
+      className={`w-full rounded-2xl py-3 font-bold active:scale-97 ${tone}`}
     >
       {label}
     </button>

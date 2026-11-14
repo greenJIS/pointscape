@@ -79,7 +79,7 @@ export function Page({
       </main>
       {footer && (
         <footer
-          className={`mx-auto flex w-full ${width} shrink-0 flex-col gap-3 p-5 pt-3`}
+          className={`mx-auto flex w-full ${width} shrink-0 flex-col gap-3 p-5 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom))]`}
         >
           {footer}
         </footer>

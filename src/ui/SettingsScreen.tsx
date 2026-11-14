@@ -8,7 +8,7 @@ import type {
 } from '../game/settings';
 import { revealTheme } from '../game/useDark';
 import { POOL } from '../view/palette';
-import { MoonIcon, SunIcon } from './icons';
+import { Check, MoonIcon, SunIcon } from './icons';
 import { Modal, ModalButton } from './Modal';
 import { Page } from './Page';
 
@@ -112,13 +112,13 @@ export function SettingsScreen({
         onBack={onBack}
         overlay
         width="max-w-2xl"
-        bodyClass="flex flex-col gap-5"
+        bodyClass="flex flex-col gap-5 pb-28"
         footer={
           <>
             <button
               type="button"
               onClick={() => setConfirming(true)}
-              className="rounded-2xl bg-red-400 py-3 font-bold text-ink shadow-[0_4px_0_var(--color-danger-edge)]"
+              className="rounded-2xl bg-red-400 py-3 font-bold text-ink shadow-[0_3px_0_var(--color-danger-edge)] active:scale-97"
             >
               Reset progress
             </button>
@@ -194,8 +194,11 @@ export function SettingsScreen({
                   type="button"
                   aria-pressed={settings.colorMode === m.id}
                   onClick={() => onSettings({ ...settings, colorMode: m.id })}
-                  className={`rounded-xl border-2 p-3 text-left ${settings.colorMode === m.id ? 'border-teal-300 bg-slate-800' : 'border-slate-700 bg-slate-950'}`}
+                  className={`relative rounded-xl border-2 p-3 text-left ${settings.colorMode === m.id ? 'border-teal-500 bg-teal-300/20' : 'border-slate-700 bg-slate-950'}`}
                 >
+                  {settings.colorMode === m.id && (
+                    <Check className="absolute top-2 right-2 size-4 text-strong" />
+                  )}
                   <span className="block font-bold text-strong">{m.label}</span>
                   <span className="block text-xs text-slate-400">{m.hint}</span>
                 </button>
@@ -206,7 +209,7 @@ export function SettingsScreen({
                 settings.colorMode === 'multi' ? (
                   <span
                     key={c}
-                    className="size-11 rounded-full"
+                    className="size-11 rounded-full border-2 border-slate-600"
                     style={{ background: c }}
                   />
                 ) : (
@@ -216,7 +219,7 @@ export function SettingsScreen({
                     aria-label={`Use colour ${c}`}
                     aria-pressed={settings.oneColor === c}
                     onClick={() => onSettings({ ...settings, oneColor: c })}
-                    className={`size-11 rounded-full border-2 transition-transform ${settings.oneColor === c ? 'scale-110 border-strong' : 'border-transparent'}`}
+                    className={`size-11 rounded-full border-2 transition-transform ${settings.oneColor === c ? 'scale-110 border-strong' : 'border-slate-600'}`}
                     style={{ background: c }}
                   />
                 ),
@@ -262,7 +265,7 @@ export function SettingsScreen({
 
         {dev && (
           <section className="rounded-3xl border border-amber-400/40 bg-slate-900 p-4">
-            <p className="mb-1 flex w-fit items-center gap-2 rounded-full bg-night py-0.5 pr-3 pl-1 font-semibold text-caution">
+            <p className="mb-1 flex w-fit items-center gap-2 rounded-full bg-night py-0.5 pr-3 pl-1 font-semibold text-lock">
               <span className="rounded-sm bg-amber-400 px-1.5 text-xs font-bold text-ink">
                 DEV
               </span>
