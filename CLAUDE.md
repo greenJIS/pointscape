@@ -37,7 +37,9 @@ Four layers. Dependencies point downward only.
   seeded level generator. Fully unit tested.
 - `src/game/`: state, progress, settings, `isUnlocked()`, hint gifts, web worker level loader, `localStorage`
   saving (`pointscape:v1`).
-- `src/view/`: HTML canvas 2D rendering, pan, zoom, arrow exit/bump/flash animations, synthesized sound.
+- `src/view/`: HTML canvas 2D rendering, pan, zoom, arrow exit/bump/flash animations, synthesized sound. The board
+  lives in a fixed padded square box (`square` and `pad` on `Viewport` in `camera.ts`, `BOX_PAD` in `BoardCanvas.tsx`);
+  zoom and pan are clipped to it and taps outside it are ignored.
 - `src/ui/`: React screens, modals, HUD, and dialogs.
 
 ## Key decisions
@@ -51,6 +53,13 @@ Four layers. Dependencies point downward only.
 - Player name: asked once, random animal name if skipped, editable in Settings, never cleared by Reset progress.
 - Sound is synthesized with Web Audio in `src/view/sound.ts`. No audio files ship.
 - Storage key: `pointscape:v1`.
+- A few very long arrows per board (`GIANT_CHANCE` in `core/generator.ts`). Keep them rare: too many break the 3% empty
+  cell cap, which `FULL=1 npm test` checks.
+- Hearts by size: 3, 4, 5, 6, 7. Hints: 3 to start, one gift per 5 first-time clears.
+- Reset view and double tap on empty space ease the camera over 0.5 s (instant under reduced motion). Restart, from the
+  HUD or the pause menu, asks first. Win and lose cards restart without asking.
+- Home and loading screens draw with the real board renderer (`HomeBackdrop`, `MiniBoard`), so arrows match the game.
+  The home backdrop uses a plain square level so the dots fill the whole screen.
 
 ## Conventions
 
