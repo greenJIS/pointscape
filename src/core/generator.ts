@@ -462,7 +462,13 @@ function aimAtStuck(
   return open.length > 0 ? rng.pick(open) : undefined;
 }
 
+/** Chance, while the board is still empty, that a placed arrow is a giant. */
+const GIANT_CHANCE = 0.03;
+
 function pickLength(p: GenParams, early: number, rng: Rng): number {
+  // A few very long lines per board, as in the original: about half to a full board width.
+  if (rng.chance(GIANT_CHANCE * early))
+    return Math.round(p.size * 0.6) + rng.int(Math.round(p.size * 0.6));
   const mid = Math.max(
     p.minLength,
     Math.floor((p.minLength + p.maxLength) / 2),
