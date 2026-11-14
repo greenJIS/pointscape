@@ -114,7 +114,12 @@ export function loadLevel(
   const key = keyOf(sizeIndex, level);
   let found = cache.get(key);
   if (!found) {
-    found = build(sizeIndex, level, builder);
+    const built = build(sizeIndex, level, builder);
+    // A failed build must not stay cached, or a retry would get the same failure.
+    built.catch(() => {
+      if (cache.get(key) === built) cache.delete(key);
+    });
+    found = built;
     cache.set(key, found);
   }
   return found;

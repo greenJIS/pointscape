@@ -205,4 +205,16 @@ describe('levelLoader', () => {
       resetLevelWorker();
     }
   });
+
+  it('a failed build is not cached, so a retry builds again', async () => {
+    let calls = 0;
+    setLevelBuilder(() => {
+      calls += 1;
+      // buildSafeLevel makes 100 attempts before it gives up.
+      if (calls <= 100) throw new Error('boom');
+      return buildLevel(0, 1);
+    });
+    await expect(loadLevel(0, 1)).rejects.toThrow();
+    await expect(loadLevel(0, 1)).resolves.toBeDefined();
+  });
 });
